@@ -1,13 +1,14 @@
 const express = require('express');
 const mongoose = require('mongoose');
-
+const articleRoutes = require('./routes/articleRoutes');
 const app = express();
 const port = 5001;
 
 app.use(express.json()); // allow Express to read JSON data from front-end
+app.use('/api/articles', articleRoutes);
 
 //connect to MONGOOSE
-mongoose.connect('mongodb://content_db:27017/content_db')
+mongoose.connect('mongodb://localhost:27017/content_db')
   .then(() => app.listen(port, () => console.log(`Server running on port ${port}`)))
   .catch(err => console.log("Cannot connect to database:", err));
 
