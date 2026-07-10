@@ -1,4 +1,4 @@
 FROM ubuntu:latest
-LABEL authors="sotatek"
+LABEL authors="datnguyen"
 
 ENTRYPOINT ["top", "-b"]
