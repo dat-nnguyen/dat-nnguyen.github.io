@@ -2,9 +2,101 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dat Nguyen's Website</title>
+    <link rel="icon" href="data:,">
+    <!-- Links to your external CSS file -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<div class="app-layout">
 
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <a href="#" class="site-title" id="nav-home">Dat Nguyen</a>
+        </div>
+
+        <div class="sidebar-bio">
+            <p class="sidebar-label">About Me</p>
+            <!-- HIGHLIGHTED NAME -->
+            <p>I'm <span class="text-accent">Dat</span>, a software engineer. Welcome to my page.</p>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a id="nav-blog">📝 Blog</a>
+            <a id="nav-articles">🚀 Articles</a>
+            <a id="nav-projects">👾 Projects</a>
+            <a id="nav-about">👤 About Me</a>
+            <a id="nav-books">📚 Books</a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <p>Stay Connected</p>
+            <a href="#">GitHub</a>
+            <a href="#">LinkedIn</a>
+        </div>
+    </aside>
+
+    <!-- RIGHT CONTENT AREA -->
+    <main class="main-content">
+
+        <div id="app-root">
+
+            <header class="hero-section" id="section-hero">
+                <h1>Hey, I'm Dat Nguyen!</h1>
+                <p>I'm a software engineer from grasshopper country and really into building cool stuff. My long-term goal is to build my career at a top-tier technology company (MANGOS). Besides, I am passionate about indie games, especially Don't Starve.</p>
+
+                <p>Everything on this site is written by me (just starting to <a href="#" id="inline-nav-blog" class="text-accent">blog</a>), not AI.</p>
+            </header>
+
+            <!-- SECTION: Latest Blogs -->
+            <section class="content-section" id="section-blogs">
+                <h2>📝 Latest Notes</h2>
+                <p class="section-desc">Life, thoughts, and everything else.</p>
+                <div id="latest-blogs-container" class="list-layout">
+                    <p class="loading-text">Loading latest blogs...</p>
+                </div>
+            </section>
+
+            <!-- SECTION: Deep Dives / Articles -->
+            <section class="content-section" id="section-articles">
+                <h2>🚀 Deep Dives</h2>
+                <p class="section-desc">Just sharing some knowledge.</p>
+                <div id="latest-articles-container" class="list-layout">
+                    <p class="loading-text">Loading latest articles...</p>
+                </div>
+            </section>
+
+            <!-- SECTION: Projects -->
+            <section class="content-section" id="section-projects">
+                <h2>👾 Projects</h2>
+                <p class="section-desc">Things I've built and open-sourced.</p>
+                <div id="latest-projects-container" class="card-grid">
+                    <p class="loading-text">Loading projects...</p>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- FOOTER -->
+        <footer class="site-footer">
+            <p>&copy; 2026 Dat Nguyen. Built without frameworks.</p>
+            <button id="coffee-btn" class="coffee-btn">☕ Buy me a coffee</button>
+            <div id="qr-box" class="qr-hidden">
+                <img src="qr-code.png" alt="Bank QR Code" class="qr-image">
+                <div class="bank-details">
+                    <p><strong>Bank:</strong> Vietcombank</p>
+                    <p><strong>Account:</strong> 123456789</p>
+                    <p><strong>Name:</strong> Dat Nguyen</p>
+                </div>
+            </div>
+        </footer>
+
+    </main>
+</div>
+
+<!-- Links to your external JavaScript file -->
+<script src="app.js"></script>
 </body>
 </html>

@@ -1,11 +1,1 @@
-POST http://localhost:5002/api/comments
-Content-Type: application/json
-
-{
-  "articleId": "my-first-microservice-article",
-  "authorName": "Dat Nguyen",
-  "authorEmail": "dat@example.com",
-  "content": "This architecture makes perfect sense now!"
-}
-
-###
+GET http://localhost:5002/api/comments/my-first-microservice-article

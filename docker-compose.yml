@@ -1,11 +1,32 @@
 version: '3.8'
+
 services:
+  # ---------------------------------
+  # SERVICE A: CONTENT (MongoDB)
+  # ---------------------------------
   mongodb:
     image: mongo:latest
     container_name: content_db
     ports:
       - "27017:27017"
     volumes:
-        - mongodb_data:/data/db
+      - mongo_data:/data/db
+
+  # ---------------------------------
+  # SERVICE B: INTERACTIONS (PostgreSQL)
+  # ---------------------------------
+  postgres:
+    image: postgres:15
+    container_name: interaction_db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secretpassword
+      POSTGRES_DB: interaction_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
 volumes:
-  mongodb_data:
+  mongo_data:
+  postgres_data:

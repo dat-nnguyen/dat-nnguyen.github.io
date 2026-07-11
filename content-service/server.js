@@ -12,5 +12,5 @@ mongoose.connect('mongodb://localhost:27017/content_db')
   .then(() => app.listen(port, () => console.log(`Server running on port ${port}`)))
   .catch(err => console.log("Cannot connect to database:", err));
 
-app.get('/', (req, res) => res.send('Hello World!'));
+app.get('/', (req, res) => res.send(''));
 app.listen(port, () => console.log(`Example app listening on port ${port}!`));
