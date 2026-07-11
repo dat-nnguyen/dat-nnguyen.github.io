@@ -7,19 +7,15 @@ app.use(express.json()); // allow Express to read JSON data from front-end
 
 // connect to PostgreSQL database
 const pool = new Pool({
-  user: 'admin',
-  host: 'localhost',
-  database: 'interaction_db',
-  password: 'secretpassword',
-  port: 5432,
+  connectionString:
+    'postgresql://admin:secretpassword@localhost:5432/interaction_db',
 });
 
 // testing connection to database
 pool.connect()
-  .then(() => {
-    console.log('Connected successfully to PostgreSQL database');
-  })
+  .then(() =>{ console.log('Connected successfully to PostgreSQL database'); })
   .catch(err => console.log(err))
+
 // Init table
 const initDb = async () => {
   const createTableText = `
@@ -37,12 +33,15 @@ const initDb = async () => {
     console.log('Comments table is ready.');
   } catch (err) {
     console.error('Error creating table:', err);
-  }gui
+  }
 };
 
 initDb()
   .then(() => console.log('Database initialization complete.'))
   .catch(err => console.error('Database initialization failed:', err));
+
+const commentsRoutes = require('./routes/commentsRoutes')(pool);
+app.use('/api/comments', commentsRoutes);
 
 app.get('/api/test', (req, res) => {
   res.json({ message: 'Hello from the interaction service!' });
