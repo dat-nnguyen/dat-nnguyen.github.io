@@ -37,9 +37,12 @@ const initDb = async () => {
     console.log('Comments table is ready.');
   } catch (err) {
     console.error('Error creating table:', err);
-  }
+  }gui
 };
 
+initDb()
+  .then(() => console.log('Database initialization complete.'))
+  .catch(err => console.error('Database initialization failed:', err));
 
 app.get('/api/test', (req, res) => {
   res.json({ message: 'Hello from the interaction service!' });
