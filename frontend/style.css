@@ -271,3 +271,30 @@ a:hover {
     .sidebar { width: 100%; height: auto; position: relative; border-bottom: 1px solid var(--border-color); }
     .main-content { padding: 30px 20px; }
 }
+
+#theme-toggle {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--text-primary); /* The SVG will inherit this color! */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+
+#theme-toggle:hover {
+    background: var(--border-color); /* Nice subtle hover effect */
+}
+
+#theme-toggle svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor; /* 'currentColor' tells it to look at --text-primary */
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
