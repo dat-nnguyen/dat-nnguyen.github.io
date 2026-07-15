@@ -335,3 +335,7 @@ a:hover {
     stroke-linecap: round;
     stroke-linejoin: round;
 }
+
+.hidden {
+    display: none !important;
+}

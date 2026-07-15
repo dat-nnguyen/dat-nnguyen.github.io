@@ -12,21 +12,8 @@ coffeeBtn.addEventListener('click', () => {
   }
 });
 
-// 2. Navigation Router Logic (Starter)
-// const navBlog = document.getElementById('nav-blog');
-// const inlineNavBlog = document.getElementById('inline-nav-blog');
-//
-// function navigateToBlog(event) {
-//   if (event) event.preventDefault();
-//   document
-//     .getElementById('section-blogs')
-//     .scrollIntoView({ behavior: 'smooth' });
-// }
-//
-// navBlog.addEventListener('click', navigateToBlog);
-// inlineNavBlog.addEventListener('click', navigateToBlog);
 
-// 3. Mock Data Fetcher (Demonstrating List vs Grid layout)
+
 document.addEventListener('DOMContentLoaded', () => {
   const blogContainer = document.getElementById('latest-blogs-container');
   const articleContainer = document.getElementById('latest-articles-container');
@@ -93,4 +80,75 @@ themeBtn.addEventListener('click', () => {
     themeBtn.innerHTML = sunIcon;
     localStorage.setItem('theme', 'dark');
   }
+});
+
+const navAbout = document.getElementById('nav-about');
+const navHome = document.getElementById('nav-home');
+
+const viewHome = document.getElementById('view-home');
+const viewAbout = document.getElementById('view-about');
+// navigate to About me page
+navAbout.addEventListener('click', (e) => {
+  e.preventDefault();
+  viewHome.classList.add('hidden');
+  viewAbout.classList.remove('hidden');
+});
+
+// Navigate back to home
+navHome.addEventListener('click', (e) => {
+  e.preventDefault();
+  viewAbout.classList.add('hidden');
+  viewHome.classList.remove('hidden');
+});
+
+const birthday = new Date('2006-11-19').getTime();
+const ageElement = document.getElementById('age-counter');
+
+if (ageElement) {
+  setInterval(() => {
+    const now = Date.now();
+    const ageInMs = now - birthday;
+
+    const ageInYears = ageInMs / (1000 * 60 * 60 * 24 * 365.25);
+
+    ageElement.innerText = ageInYears.toFixed(9);
+  }, 50); // Updates every 50 milliseconds!
+}
+
+const aboutContainer = document.getElementById('about-bio-container');
+let isAboutFetched = false;
+
+async function fetchAboutContent() {
+  if (isAboutFetched) return;
+
+  try {
+    const response = await fetch('http://localhost:5050/api/about');
+
+    if (!response.ok) {
+      throw new Error(`Gateway returned status: ${response.status}`);
+    }
+
+    // 3. Parse the JSON response
+    const data = await response.json();
+
+    // 4. Inject the data into the HTML
+    // Assuming your database returns an object like: { content: "I am a software engineer..." }
+    aboutContainer.innerHTML = `<p class="section-desc">${data.content}</p>`;
+
+    // 5. Flip the safety switch so we never fetch this again during this session!
+    isAboutFetched = true;
+
+  } catch (error) {
+    console.error("Failed to fetch bio from Vault 1:", error);
+    aboutContainer.innerHTML = `<p class="section-desc" style="color: #ff6b6b;">Error: Could not connect to Vault 1. Is the backend running?</p>`;
+  }
+}
+
+navAbout.addEventListener('click', (e) => {
+  e.preventDefault();
+
+  viewHome.classList.add('hidden');
+  viewAbout.classList.remove('hidden');
+
+  fetchAboutContent();
 });
