@@ -13,18 +13,18 @@ coffeeBtn.addEventListener('click', () => {
 });
 
 // 2. Navigation Router Logic (Starter)
-const navBlog = document.getElementById('nav-blog');
-const inlineNavBlog = document.getElementById('inline-nav-blog');
-
-function navigateToBlog(event) {
-  if (event) event.preventDefault();
-  document
-    .getElementById('section-blogs')
-    .scrollIntoView({ behavior: 'smooth' });
-}
-
-navBlog.addEventListener('click', navigateToBlog);
-inlineNavBlog.addEventListener('click', navigateToBlog);
+// const navBlog = document.getElementById('nav-blog');
+// const inlineNavBlog = document.getElementById('inline-nav-blog');
+//
+// function navigateToBlog(event) {
+//   if (event) event.preventDefault();
+//   document
+//     .getElementById('section-blogs')
+//     .scrollIntoView({ behavior: 'smooth' });
+// }
+//
+// navBlog.addEventListener('click', navigateToBlog);
+// inlineNavBlog.addEventListener('click', navigateToBlog);
 
 // 3. Mock Data Fetcher (Demonstrating List vs Grid layout)
 document.addEventListener('DOMContentLoaded', () => {
@@ -71,13 +71,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 const sunIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>`;
-
 const moonIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>`;
-
-// 2. Grab your button
+const savedTheme = localStorage.getItem('theme');
 const themeBtn = document.getElementById('theme-toggle');
-
-themeBtn.innerHTML = sunIcon;
+if (savedTheme === 'light') {
+  document.body.classList.add('light-theme');
+  themeBtn.innerHTML = moonIcon;
+} else {
+  document.body.classList.remove('light-theme');
+  themeBtn.innerHTML = sunIcon;
+}
 
 themeBtn.addEventListener('click', () => {
   // Toggle the class on the body
@@ -85,9 +88,9 @@ themeBtn.addEventListener('click', () => {
 
   if (document.body.classList.contains('light-theme')) {
     themeBtn.innerHTML = moonIcon;
-    // Bonus: Save to local storage here!
+    localStorage.setItem('theme', 'light');
   } else {
     themeBtn.innerHTML = sunIcon;
-    // Bonus: Save to local storage here!
+    localStorage.setItem('theme', 'dark');
   }
 });

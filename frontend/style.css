@@ -133,7 +133,17 @@ a:hover {
     color: var(--text-secondary);
     margin-bottom: 10px;
 }
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
 
+.nav-item svg {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+}
 /* 4. MAIN CONTENT AREA */
 .main-content {
     flex: 1;
@@ -173,7 +183,21 @@ a:hover {
     margin-bottom: 30px;
     max-width: 750px;
 }
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 12px; /* Space between the icon and the text */
 
+    font-size: 2.2rem; /* Keeps your original header size */
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+}
+
+.section-title svg {
+    flex-shrink: 0;
+    width: 36px;  /* Slightly larger to match the 2.2rem font size! */
+    height: 36px;
+}
 /* 6. LAYOUTS: LIST (Blogs/Articles) & GRID (Projects) */
 .list-layout {
     display: flex;
