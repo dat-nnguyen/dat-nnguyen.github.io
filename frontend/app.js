@@ -83,9 +83,7 @@ themeBtn.addEventListener('click', () => {
   // Toggle the class on the body
   document.body.classList.toggle('light-theme');
 
-  // Check if it has the class now
   if (document.body.classList.contains('light-theme')) {
-    // We are in Light Mode -> Show Moon Icon
     themeBtn.innerHTML = moonIcon;
     // Bonus: Save to local storage here!
   } else {

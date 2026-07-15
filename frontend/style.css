@@ -14,14 +14,23 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease;
 }
 
 body {
-    font-family: var(--font-sans);
+    font-family: var(--font-sans), serif;
     background-color: var(--bg-main);
     color: var(--text-primary);
     line-height: 1.6;
     font-size: 1.05rem;
+}
+/* LIGHT MODE OVERRIDES */
+body.light-theme {
+    --bg-main: #ffffff;
+    --bg-card: #f7f9fa;
+    --text-primary: #1c1e21;
+    --text-secondary: #65676b;
+    --border-color: #eaeaec;
 }
 
 a {
@@ -45,6 +54,7 @@ a:hover {
     max-width: 1350px;
     width: 100%;
     margin: 0 auto;
+
 }
 
 /* 3. SIDEBAR STYLES */
@@ -59,6 +69,7 @@ a:hover {
     top: 0;
     height: 100vh;
     overflow-y: auto;
+
 }
 
 .site-title {
@@ -71,6 +82,10 @@ a:hover {
     padding-bottom: 25px;
     margin-bottom: 25px;
     border-bottom: 1px solid var(--border-color);
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .sidebar-label {
@@ -100,7 +115,6 @@ a:hover {
     color: var(--text-primary);
     font-weight: 500;
     text-decoration: none;
-    transition: color 0.2s;
     cursor: pointer;
 }
 
@@ -175,7 +189,7 @@ a:hover {
 .list-item .date {
     font-size: 0.85rem;
     color: var(--text-secondary);
-    font-family: var(--font-mono);
+    font-family: var(--font-mono), serif;
     margin-bottom: 2px;
 }
 
@@ -199,7 +213,6 @@ a:hover {
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 25px;
-    transition: transform 0.2s, border-color 0.2s;
 }
 
 .card:hover {
@@ -276,7 +289,7 @@ a:hover {
     background: transparent;
     border: none;
     cursor: pointer;
-    color: var(--text-primary); /* The SVG will inherit this color! */
+    color: var(--text-primary);
     display: flex;
     align-items: center;
     justify-content: center;
