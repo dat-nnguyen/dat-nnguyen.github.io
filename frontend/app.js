@@ -152,3 +152,49 @@ navAbout.addEventListener('click', (e) => {
 
   fetchAboutContent();
 });
+
+function formatDate(dateString) {
+  const options = { month: 'long', day: 'numeric' };
+  return new Date(dateString).toLocaleDateString('en-US', options);
+}
+
+// The generic fetcher
+async function fetchAndRenderPosts(category, containerId) {
+  const container = document.getElementById(containerId);
+
+  try {
+    // Notice we are knocking on the Gateway's door (5050) and passing the category query!
+    const response = await fetch(
+      `http://localhost:5050/api/posts?category=${category}`,
+    );
+    if (!response.ok) throw new Error('Gateway error');
+
+    const posts = await response.json();
+
+    if (posts.length === 0) {
+      container.innerHTML = `<p class="loading-text">No ${category} posts yet.</p>`;
+      return;
+    }
+
+    // Map over the posts and generate the HTML blocks
+    container.innerHTML = posts
+      .map(
+        (post) => `
+            <div class="list-item">
+                <span class="date">${formatDate(post.createdAt)}</span>
+                <span class="title">
+                    <a href="#" class="post-link" data-slug="${post.slug}">${post.title}</a>
+                </span>
+            </div>
+        `,
+      )
+      .join('');
+  } catch (error) {
+    console.error(`Failed to load ${category}:`, error);
+    container.innerHTML = `<p class="loading-text" style="color: #ff6b6b;">Failed to load posts.</p>`;
+  }
+}
+
+// Call this as soon as the app loads!
+fetchAndRenderPosts('life', 'latest-blogs-container');
+fetchAndRenderPosts('technical', 'latest-articles-container');
