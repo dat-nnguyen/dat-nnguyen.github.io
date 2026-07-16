@@ -1,31 +1,32 @@
 const mongoose = require('mongoose');
-//define schema for database
-const articleSchema = new mongoose.Schema({
+
+const postSchema = new mongoose.Schema({
   title: {
-    type : String,
-    required : true
+    type: String,
+    required: true,
   },
-
   slug: {
-    type : String,
-    required : true,
-    unique : true // two articles cannot have the same URL
+    type: String,
+    required: true,
+    unique: true, // E.g., 'building-node-gateway'
   },
-
+  excerpt: {
+    type: String,
+    required: true, // Short description for the homepage cards
+  },
   content: {
-    type : String,
-    required : true
+    type: String,
+    required: true, // The full markdown/HTML body
   },
-
-  tags: {
-    type: [String],
-    default: []
+  category: {
+    type: String,
+    enum: ['life', 'technical', 'project'], // Strictly enforces these 3 types
+    required: true,
   },
-
   createdAt: {
     type: Date,
-    default: Date.now
-  }
+    default: Date.now,
+  },
 });
 
-module.exports = mongoose.model('Article', articleSchema); // export model to be used in other files
+module.exports = mongoose.model('Post', postSchema);
