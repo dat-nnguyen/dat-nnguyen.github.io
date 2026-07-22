@@ -1,32 +1,48 @@
 const express = require('express');
 const router = express.Router();
-const About = require('../models/About'); // Bring in the Vault 1 schema
+const path = require('path');
+const fs = require('fs').promises;
+const matter = require('gray-matter');
+const marked = require('marked');
+
+let cachedBio = null;
 
 // ==========================================
-// GET: Fetch the Bio for the Frontend
+// GET: Fetch the Bio from Markdown with RAM Caching
 // ==========================================
 router.get('/', async (req, res) => {
   try {
-    // Grab the first document in the collection
-    const bioData = await About.findOne();
-
-    // Fallback just in case the database is completely empty
-    if (!bioData) {
-      return res.json({
-        content:
-          'I am a software engineer passionate about building scalable, efficient systems. (Default Fallback)',
-      });
+    if (cachedBio !== null) {
+      console.log('Serving from cache(RAM)');
+      return res.json(cachedBio);
     }
 
-    res.json({ content: bioData.content });
+    console.log('Reading from Hard Drive...');
+    const filePath = path.join(__dirname, '../markdown_content.md/about.md');
+    const rawMarkdown = await fs.readFile(filePath, 'utf-8');
+    const parsedFile = matter(rawMarkdown);
+    const htmlContent = marked.parse(parsedFile.content);
+
+    const responseData = {
+      title: parsedFile.data.title || 'About Me',
+      content: htmlContent,
+    };
+
+    cachedBio = responseData;
+    res.json(responseData);
   } catch (error) {
-    console.error('Vault 1 Error:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error('Failed to read Markdown file:', error);
+
+    // Fallback response if the file is missing or broken
+    res.status(500).json({
+      title: 'About Me',
+      content: '<p>Bio is currently being updated...</p>',
+    });
   }
 });
 
 // ==========================================
-// POST: Update or Create the Bio (Seed)
+// POST: Update or Create the Bio
 // ==========================================
 router.post('/', async (req, res) => {
   try {
@@ -36,18 +52,15 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Content field is required' });
     }
 
-    // Find the first document and update it, OR create it if it doesn't exist (upsert)
-    const updatedBio = await About.findOneAndUpdate(
-      {}, // Empty filter means "just grab the first one"
-      { content: content },
-      { new: true, upsert: true },
-    );
+    // Invalidate cache on update
+    cachedBio = null;
 
-    res.json(updatedBio);
+    res.json({ message: 'Bio updated' });
   } catch (error) {
     console.error('Failed to save bio:', error);
-    res.status(500).json({ error: 'Could not save to Vault 1' });
+    res.status(500).json({ error: 'Could not save bio' });
   }
 });
 
 module.exports = router;
+

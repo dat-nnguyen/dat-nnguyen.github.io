@@ -2,9 +2,6 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 
-const postRoutes = require('./routes/postRoutes');
-const aboutRoutes = require('./routes/aboutRoutes');
-
 const app = express();
 
 app.use(cors());
@@ -16,7 +13,6 @@ mongoose.connect('mongodb://localhost:27017/content_db', {})
 
 app.use('/api/posts', postRoutes);
 app.use('/api/about', aboutRoutes);
-// TO-DO: aksdjflkasdjfl
-app.use('api/asdf');
+
 const PORT = 5001;
 app.listen(PORT, () => console.log(`Content Service running on port ${PORT}`));
