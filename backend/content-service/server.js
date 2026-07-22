@@ -1,15 +1,13 @@
 const express = require('express');
 const cors = require('cors');
-const mongoose = require('mongoose');
+
+const postRoutes = require('./routes/postRoutes');
+const aboutRoutes = require('./routes/aboutRoutes');
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
-
-mongoose.connect('mongodb://localhost:27017/content_db', {})
-.then(() => console.log('Connected to MongoDB'))
-.catch(err => console.error('Could not connect to MongoDB', err));
 
 app.use('/api/posts', postRoutes);
 app.use('/api/about', aboutRoutes);

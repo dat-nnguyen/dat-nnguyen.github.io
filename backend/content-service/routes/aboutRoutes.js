@@ -18,7 +18,7 @@ router.get('/', async (req, res) => {
     }
 
     console.log('Reading from Hard Drive...');
-    const filePath = path.join(__dirname, '../markdown_content.md/about.md');
+    const filePath = path.join(__dirname, '../markdown_content/about.md');
     const rawMarkdown = await fs.readFile(filePath, 'utf-8');
     const parsedFile = matter(rawMarkdown);
     const htmlContent = marked.parse(parsedFile.content);
@@ -41,26 +41,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// ==========================================
-// POST: Update or Create the Bio
-// ==========================================
-router.post('/', async (req, res) => {
-  try {
-    const { content } = req.body;
-
-    if (!content) {
-      return res.status(400).json({ error: 'Content field is required' });
-    }
-
-    // Invalidate cache on update
-    cachedBio = null;
-
-    res.json({ message: 'Bio updated' });
-  } catch (error) {
-    console.error('Failed to save bio:', error);
-    res.status(500).json({ error: 'Could not save bio' });
-  }
-});
 
 module.exports = router;
+
 
