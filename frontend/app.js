@@ -170,6 +170,9 @@ async function openPost(slug) {
           <button id="like-btn" class="like-btn">
             ❤️ Like <span id="like-count">0</span>
           </button>
+          <button id="share-btn" class="share-btn">
+            🔗 Share
+          </button>
         </div>
       </article>
 
@@ -201,6 +204,12 @@ async function openPost(slug) {
     if (likeBtn) {
       likeBtn.addEventListener('click', () => handleLikeClick(slug));
     }
+
+    const shareBtn = document.getElementById('share-btn');
+    if (shareBtn) {
+      shareBtn.addEventListener('click', () => handleShareClick(slug));
+    }
+
 
     const commentForm = document.getElementById('comment-form');
     if (commentForm) {
@@ -677,18 +686,54 @@ function applySearchFilter() {
   });
 }
 
-// REAL-TIME SEARCH LISTENER
-function setupSearchListener() {
-  const searchInput = document.getElementById('site-search-input');
-  if (!searchInput) return;
-
-  searchInput.addEventListener('input', () => {
-    applySearchFilter();
-  });
+// SHARE ARTICLE & TOAST SYSTEM
+async function handleShareClick(slug) {
+  const url = window.location.href;
+  try {
+    await navigator.clipboard.writeText(url);
+    showToast('Link copied to clipboard! 📋');
+  } catch (err) {
+    console.error('Failed to copy link:', err);
+    showToast('Failed to copy link.');
+  }
 }
 
+function showToast(message) {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
 
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.innerText = message;
 
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add('show');
+  }, 10);
+
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+// MOBILE DRAWER NAVIGATION
+function setupMobileDrawer() {
+  const toggleBtn = document.getElementById('mobile-menu-toggle');
+  const sidebar = document.querySelector('.sidebar');
+  if (!toggleBtn || !sidebar) return;
+
+  toggleBtn.addEventListener('click', () => {
+    sidebar.classList.toggle('open');
+  });
+
+  document.querySelectorAll('.sidebar-nav .nav-item').forEach((item) => {
+    item.addEventListener('click', () => {
+      sidebar.classList.remove('open');
+    });
+  });
+}
 // ==========================================
 // SPA ROUTER: Hash-based Route Management
 // ==========================================
@@ -724,10 +769,11 @@ function handleRouting() {
   }
 }
 
-
 window.addEventListener('hashchange', handleRouting);
+
 
 document.addEventListener('DOMContentLoaded', () => {
   handleRouting();
   setupSearchListener();
+  setupMobileDrawer();
 });
