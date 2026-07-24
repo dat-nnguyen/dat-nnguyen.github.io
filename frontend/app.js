@@ -195,6 +195,21 @@ async function fetchAndRenderPosts(category, containerId) {
   }
 }
 
+async function fetchBio() {
+  try {
+    const respose = await fech('api/about');
+
+    if (!response.ok) {
+      throw new Error('HTTP error! status: ${resposne.status}');
+    }
+
+    const data = await response.json();
+    console.log("Markdown data: ", data);
+  } catch (error) {
+    console.error('Tunnel collapsed!', error);
+  }
+}
+
 // Call this as soon as the app loads!
 fetchAndRenderPosts('life', 'latest-blogs-container');
 fetchAndRenderPosts('technical', 'latest-articles-container');
