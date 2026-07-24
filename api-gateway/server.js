@@ -1,57 +1,50 @@
 const express = require('express');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const cors = require('cors');
+const path = require('path');
+
+// Direct route imports as production fallback for single-instance cloud deployment
+const postRoutes = require('../backend/content-service/routes/postRoutes');
+const aboutRoutes = require('../backend/content-service/routes/aboutRoutes');
+const projectRoutes = require('../backend/content-service/routes/projectRoutes');
+const commentsRoutes = require('../backend/interaction-service/routes/commentsRoutes')({
+  query: () => Promise.reject(new Error('PostgreSQL not configured')),
+});
 
 const app = express();
-const PORT = 5050; // Port for the API Gateway server
+const PORT = process.env.PORT || 5050;
 
 app.use(cors());
+app.use(express.json());
 
-// Route A: Content Service (Port 5001) - Handles Posts
-app.use(
-  createProxyMiddleware({
-    pathFilter: '/api/posts',
-    target: 'http://localhost:5001',
-    changeOrigin: true,
-  }),
-);
+const CONTENT_SERVICE_URL = process.env.CONTENT_SERVICE_URL;
+const INTERACTION_SERVICE_URL = process.env.INTERACTION_SERVICE_URL;
 
-// Route B: Content Service (Port 5001) - Handles Bio/About
-app.use(
-  createProxyMiddleware({
-    pathFilter: '/api/about',
-    target: 'http://localhost:5001',
-    changeOrigin: true,
-  }),
-);
+// Content Service Routes
+if (CONTENT_SERVICE_URL) {
+  app.use(createProxyMiddleware({ pathFilter: '/api/posts', target: CONTENT_SERVICE_URL, changeOrigin: true }));
+  app.use(createProxyMiddleware({ pathFilter: '/api/about', target: CONTENT_SERVICE_URL, changeOrigin: true }));
+  app.use(createProxyMiddleware({ pathFilter: '/api/projects', target: CONTENT_SERVICE_URL, changeOrigin: true }));
+} else {
+  app.use('/api/posts', postRoutes);
+  app.use('/api/about', aboutRoutes);
+  app.use('/api/projects', projectRoutes);
+}
 
-// Route C: Content Service (Port 5001) - Handles Projects
-app.use(
-  createProxyMiddleware({
-    pathFilter: '/api/projects',
-    target: 'http://localhost:5001',
-    changeOrigin: true,
-  }),
-);
+// Interaction Service Routes
+if (INTERACTION_SERVICE_URL) {
+  app.use(createProxyMiddleware({ pathFilter: '/api/comments', target: INTERACTION_SERVICE_URL, changeOrigin: true }));
+} else {
+  app.use('/api/comments', commentsRoutes);
+}
 
-// Route D: Interaction Service (Port 5002) - Handles Comments
-app.use(
-  createProxyMiddleware({
-    pathFilter: '/api/comments',
-    target: 'http://localhost:5002',
-    changeOrigin: true,
-  }),
-);
+app.get('/health', (req, res) => res.json({ status: 'ok', service: 'API Gateway' }));
 
-// Fallback: Catch everything else
-app.use((req, res) => res.status(404).send('Not Found'));
+app.use((req, res) => res.status(404).json({ error: 'Not Found' }));
 
 app.listen(PORT, () => {
-  console.log(`🚀 API Gateway is running on http://localhost:${PORT}`);
-  console.log(`➡️  Routing /api/posts to Content Service (5001)`);
-  console.log(`➡️  Routing /api/about to Content Service (5001)`);
-  console.log(`➡️  Routing /api/projects to Content Service (5001)`);
-  console.log(`➡️  Routing /api/comments to Interaction Service (5002)`);
+  console.log(`🚀 API Gateway is running on port ${PORT}`);
 });
+
 
 
