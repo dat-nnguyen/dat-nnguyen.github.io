@@ -18,7 +18,48 @@ async function saveFallbackComments(comments) {
   await fs.writeFile(commentsJsonPath, JSON.stringify(comments, null, 2), 'utf-8');
 }
 
+const likesJsonPath = path.join(__dirname, '../likes.json');
+
+async function getLikes() {
+  try {
+    const data = await fs.readFile(likesJsonPath, 'utf-8');
+    return JSON.parse(data);
+  } catch {
+    return {};
+  }
+}
+
+async function saveLikes(likes) {
+  await fs.writeFile(likesJsonPath, JSON.stringify(likes, null, 2), 'utf-8');
+}
+
 module.exports = (pool) => {
+  // GET likes for article
+  router.get('/like/:articleId', async (req, res) => {
+    const { articleId } = req.params;
+    const likesMap = await getLikes();
+    const count = likesMap[articleId] || 0;
+    res.json({ articleId, likes: count });
+  });
+
+  // POST increment or decrement like for article
+  router.post('/like/:articleId', async (req, res) => {
+    const { articleId } = req.params;
+    const { action } = req.body || {};
+    const likesMap = await getLikes();
+    const current = likesMap[articleId] || 0;
+
+    if (action === 'unlike') {
+      likesMap[articleId] = Math.max(0, current - 1);
+    } else {
+      likesMap[articleId] = current + 1;
+    }
+
+    await saveLikes(likesMap);
+    res.json({ articleId, likes: likesMap[articleId] });
+  });
+
+
   // POST method to create new comment
   router.post('/', async (req, res) => {
     const { articleId, authorName, authorEmail, content } = req.body;

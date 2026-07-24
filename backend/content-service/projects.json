@@ -3,24 +3,28 @@
     "id": "1",
     "title": "Chrome Dino AI",
     "description": "An artificial intelligence / neuroevolution agent trained to play the Chrome Dinosaur game.",
-    "link": "https://github.com/dat-nnguyen/chrome-dino-ai"
+    "link": "https://github.com/dat-nnguyen/chrome-dino-ai",
+    "tags": ["AI", "Neuroevolution", "JavaScript"]
   },
   {
     "id": "2",
     "title": "Arkanoid Game",
     "description": "A classic arcade brick-breaker game built with interactive paddle physics and power-ups.",
-    "link": "https://github.com/dat-nnguyen/ArkanoidGame"
+    "link": "https://github.com/dat-nnguyen/ArkanoidGame",
+    "tags": ["Arcade", "Physics", "JavaScript"]
   },
   {
     "id": "3",
     "title": "Java Chess Engine",
     "description": "A custom chess engine and AI evaluation algorithm written from scratch in Java.",
-    "link": "https://github.com/dat-nnguyen/java-chess-engine"
+    "link": "https://github.com/dat-nnguyen/java-chess-engine",
+    "tags": ["Java", "Chess", "Algorithms"]
   },
   {
     "id": "4",
     "title": "Spinning Donut",
     "description": "A 3D ASCII spinning donut animation renderer calculating torus illumination and projection math.",
-    "link": "https://github.com/dat-nnguyen/SpinningDonut"
+    "link": "https://github.com/dat-nnguyen/SpinningDonut",
+    "tags": ["C", "3D Math", "ASCII"]
   }
 ]

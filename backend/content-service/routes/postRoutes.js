@@ -7,6 +7,12 @@ const marked = require('marked');
 
 const postsDir = path.join(__dirname, '../markdown_content/posts');
 
+function calculateReadingTime(content) {
+  const words = content.trim().split(/\s+/).filter(Boolean).length;
+  const mins = Math.max(1, Math.ceil(words / 200));
+  return `${mins} min read`;
+}
+
 // GET /api/posts -> Fetch all posts, optionally filtered by category
 router.get('/', async (req, res) => {
   try {
@@ -30,6 +36,7 @@ router.get('/', async (req, res) => {
           category: parsed.data.category || parsed.data.type || 'technical',
           slug: parsed.data.slug || file.replace('.md', ''),
           createdAt: parsed.data.lastUpdated || parsed.data.date || new Date().toISOString(),
+          readingTime: calculateReadingTime(parsed.content),
           content: marked.parse(parsed.content),
         });
       }
@@ -84,6 +91,7 @@ router.get('/:slug', async (req, res) => {
             category: parsed.data.category || parsed.data.type || 'technical',
             slug: itemSlug,
             createdAt: parsed.data.lastUpdated || parsed.data.date || new Date().toISOString(),
+            readingTime: calculateReadingTime(parsed.content),
             content: marked.parse(parsed.content),
           });
         }
@@ -96,6 +104,7 @@ router.get('/:slug', async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
 
 module.exports = router;
 

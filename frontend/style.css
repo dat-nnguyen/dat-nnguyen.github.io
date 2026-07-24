@@ -457,14 +457,29 @@ a:hover {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
     font-size: 0.9rem;
+}
+
+.comment-author-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.comment-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--border-color);
 }
 
 .comment-author {
     font-weight: 600;
     color: var(--text-primary);
 }
+
 
 .comment-date {
     color: var(--text-secondary);
@@ -482,4 +497,123 @@ a:hover {
 .no-comments-text {
     color: var(--text-secondary);
     font-style: italic;
+}
+
+/* COPY CODE BUTTON STYLING */
+.copy-code-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    font-family: var(--font-sans);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    opacity: 0.8;
+}
+
+.copy-code-btn:hover {
+    opacity: 1;
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+}
+
+.copy-code-btn.copied {
+    background: #4cd964;
+    color: #121212;
+    border-color: #4cd964;
+    font-weight: 600;
+}
+
+/* LIKE BUTTON STYLING */
+.post-actions {
+    margin-top: 30px;
+    margin-bottom: 20px;
+}
+
+.like-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 0.95rem;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.like-btn:hover {
+    border-color: #ff4757;
+    color: #ff4757;
+    transform: scale(1.04);
+}
+
+.like-btn.liked {
+    background: rgba(255, 71, 87, 0.15);
+    border-color: #ff4757;
+    color: #ff4757;
+}
+
+/* SEARCH BAR STYLING */
+.search-header {
+    margin-bottom: 35px;
+}
+
+.search-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    max-width: 600px;
+}
+
+.search-icon {
+    position: absolute;
+    left: 15px;
+    width: 18px;
+    height: 18px;
+    color: var(--text-secondary);
+    pointer-events: none;
+}
+
+#site-search-input {
+    width: 100%;
+    padding: 12px 16px 12px 42px;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 25px;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+#site-search-input:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(100, 181, 246, 0.15);
+}
+
+/* PROJECT TAG BADGES */
+.project-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 15px;
+}
+
+.project-tag {
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
+    padding: 3px 10px;
+    background: rgba(100, 181, 246, 0.1);
+    color: var(--accent-color);
+    border-radius: 12px;
+    border: 1px solid rgba(100, 181, 246, 0.2);
 }
