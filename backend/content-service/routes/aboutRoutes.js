@@ -5,31 +5,20 @@ const fs = require('fs').promises;
 const matter = require('gray-matter');
 const marked = require('marked');
 
-let cachedBio = null;
-
 // ==========================================
-// GET: Fetch the Bio from Markdown with RAM Caching
+// GET: Fetch the Bio from Markdown
 // ==========================================
 router.get('/', async (req, res) => {
   try {
-    if (cachedBio !== null) {
-      console.log('Serving from cache(RAM)');
-      return res.json(cachedBio);
-    }
-
-    console.log('Reading from Hard Drive...');
     const filePath = path.join(__dirname, '../markdown_content/about.md');
     const rawMarkdown = await fs.readFile(filePath, 'utf-8');
     const parsedFile = matter(rawMarkdown);
     const htmlContent = marked.parse(parsedFile.content);
 
-    const responseData = {
+    res.json({
       title: parsedFile.data.title || 'About Me',
       content: htmlContent,
-    };
-
-    cachedBio = responseData;
-    res.json(responseData);
+    });
   } catch (error) {
     console.error('Failed to read Markdown file:', error);
 
@@ -41,7 +30,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-
 module.exports = router;
+
 
 

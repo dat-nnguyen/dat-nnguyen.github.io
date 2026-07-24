@@ -42,12 +42,23 @@ router.get('/', async (req, res) => {
       );
     }
 
+    // Sort newest first
+    result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    if (req.query.limit) {
+      const limit = parseInt(req.query.limit, 10);
+      if (!isNaN(limit)) {
+        result = result.slice(0, limit);
+      }
+    }
+
     res.json(result);
   } catch (error) {
     console.error('Failed to fetch posts:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
 
 // GET /api/posts/:slug -> Fetch single post by slug
 router.get('/:slug', async (req, res) => {

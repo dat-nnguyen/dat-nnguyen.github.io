@@ -100,17 +100,14 @@ function showView(targetView) {
   window.scrollTo(0, 0);
 }
 
-// Navigate to Home
-navHome.addEventListener('click', (e) => {
-  e.preventDefault();
-  showView(viewHome);
-});
-
-if (backToHome) {
-  backToHome.addEventListener('click', (e) => {
-    e.preventDefault();
-    showView(viewHome);
+function updateActiveNav(activeId) {
+  document.querySelectorAll('.sidebar-nav .nav-item').forEach((item) => {
+    item.classList.remove('active');
   });
+  if (activeId) {
+    const activeEl = document.getElementById(activeId);
+    if (activeEl) activeEl.classList.add('active');
+  }
 }
 
 const birthday = new Date('2006-11-19').getTime();
@@ -146,12 +143,6 @@ async function fetchAboutContent() {
     aboutContainer.innerHTML = `<p class="section-desc" style="color: #ff6b6b;">Error: Could not load bio. Is the backend running?</p>`;
   }
 }
-
-navAbout.addEventListener('click', (e) => {
-  e.preventDefault();
-  showView(viewAbout);
-  fetchAboutContent();
-});
 
 function formatDate(dateString) {
   const options = { month: 'long', day: 'numeric', year: 'numeric' };
@@ -189,19 +180,7 @@ async function openPost(slug) {
   }
 }
 
-// Attach event listener for clicking post links dynamically
-document.addEventListener('click', (e) => {
-  const link = e.target.closest('.post-link');
-  if (link) {
-    e.preventDefault();
-    const slug = link.getAttribute('data-slug');
-    if (slug) {
-      openPost(slug);
-    }
-  }
-});
-
-// The generic fetcher
+// The generic fetcher for homepage lists
 async function fetchAndRenderPosts(category, containerId) {
   const container = document.getElementById(containerId);
 
@@ -222,7 +201,7 @@ async function fetchAndRenderPosts(category, containerId) {
             <div class="list-item">
                 <span class="date">${formatDate(post.createdAt)}</span>
                 <span class="title">
-                    <a href="#" class="post-link" data-slug="${post.slug}">${post.title}</a>
+                    <a href="#post/${post.slug}" class="post-link" data-slug="${post.slug}">${post.title}</a>
                 </span>
             </div>
         `,
@@ -234,6 +213,46 @@ async function fetchAndRenderPosts(category, containerId) {
   }
 }
 
-// Call this as soon as the app loads!
-fetchAndRenderPosts('life', 'latest-blogs-container');
-fetchAndRenderPosts('technical', 'latest-articles-container');
+// ==========================================
+// SPA ROUTER: Hash-based Route Management
+// ==========================================
+function handleRouting() {
+  const hash = window.location.hash || '#home';
+
+  if (hash.startsWith('#post/')) {
+    const slug = hash.replace('#post/', '');
+    openPost(slug);
+    updateActiveNav(null);
+  } else if (hash === '#about') {
+    showView(viewAbout);
+    fetchAboutContent();
+    updateActiveNav('nav-about');
+  } else if (hash === '#blog') {
+    showView(viewHome);
+    updateActiveNav('nav-blog');
+    const el = document.getElementById('section-blogs');
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  } else if (hash === '#articles') {
+    showView(viewHome);
+    updateActiveNav('nav-articles');
+    const el = document.getElementById('section-articles');
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  } else if (hash === '#projects') {
+    showView(viewHome);
+    updateActiveNav('nav-projects');
+    const el = document.getElementById('section-projects');
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  } else {
+    showView(viewHome);
+    updateActiveNav(null);
+  }
+}
+
+window.addEventListener('hashchange', handleRouting);
+
+// Load posts and handle initial route on page load
+document.addEventListener('DOMContentLoaded', () => {
+  fetchAndRenderPosts('life', 'latest-blogs-container');
+  fetchAndRenderPosts('technical', 'latest-articles-container');
+  handleRouting();
+});

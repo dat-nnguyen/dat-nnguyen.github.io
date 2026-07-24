@@ -5,12 +5,12 @@ const cors = require('cors');
 const app = express();
 const PORT = 5050; // Port for the API Gateway server
 
-app.use(cors({ origin: 'http://localhost:3000' }));
+app.use(cors());
 
 // Route A: Content Service (Port 5001) - Handles Posts
 app.use(
-  '/api/posts',
   createProxyMiddleware({
+    pathFilter: '/api/posts',
     target: 'http://localhost:5001',
     changeOrigin: true,
   }),
@@ -18,8 +18,8 @@ app.use(
 
 // Route B: Content Service (Port 5001) - Handles Bio/About
 app.use(
-  '/api/about',
   createProxyMiddleware({
+    pathFilter: '/api/about',
     target: 'http://localhost:5001',
     changeOrigin: true,
   }),
@@ -27,8 +27,8 @@ app.use(
 
 // Route C: Interaction Service (Port 5002) - Handles Comments
 app.use(
-  '/api/comments',
   createProxyMiddleware({
+    pathFilter: '/api/comments',
     target: 'http://localhost:5002',
     changeOrigin: true,
   }),
@@ -43,3 +43,4 @@ app.listen(PORT, () => {
   console.log(`➡️  Routing /api/about to Content Service (5001)`);
   console.log(`➡️  Routing /api/comments to Interaction Service (5002)`);
 });
+
