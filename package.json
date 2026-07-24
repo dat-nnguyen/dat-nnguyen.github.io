@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "start": "node api-gateway/server.js",
     "dev": "vite frontend",
     "build": "vite build frontend",
     "preview": "vite preview frontend"

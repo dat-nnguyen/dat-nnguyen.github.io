@@ -38,9 +38,18 @@ if (INTERACTION_SERVICE_URL) {
   app.use('/api/comments', commentsRoutes);
 }
 
+app.get('/', (req, res) => {
+  res.json({
+    message: "🚀 Dat Nguyen's Personal Website API Gateway",
+    status: 'online',
+    endpoints: ['/api/posts', '/api/about', '/api/projects', '/api/comments', '/health'],
+  });
+});
+
 app.get('/health', (req, res) => res.json({ status: 'ok', service: 'API Gateway' }));
 
 app.use((req, res) => res.status(404).json({ error: 'Not Found' }));
+
 
 app.listen(PORT, () => {
   console.log(`🚀 API Gateway is running on port ${PORT}`);
