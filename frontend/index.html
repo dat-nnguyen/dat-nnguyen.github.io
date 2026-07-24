@@ -29,7 +29,7 @@
         </div>
 
         <nav class="sidebar-nav">
-            <a id="nav-blog" href="#blog" class="nav-item">
+            <a id="nav-blog" href="#blogs" class="nav-item">
                 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M20.965 7C20.8873 5.1277 20.6366 3.97975 19.8284 3.17157C18.6569 2 16.7712 2 13 2H11C7.22876 2 5.34315 2 4.17157 3.17157C3 4.34315 3 6.22876 3 10V14C3 17.7712 3 19.6569 4.17157 20.8284C5.34315 22 7.22876 22 11 22H13C16.7712 22 18.6569 22 19.8284 20.8284C21 19.6569 21 17.7712 21 14V11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                     <path d="M6 12C6 10.5858 6 9.87868 6.43934 9.43934C6.87868 9 7.58579 9 9 9H15C16.4142 9 17.1213 9 17.5607 9.43934C18 9.87868 18 10.5858 18 12V16C18 17.4142 18 18.1213 17.5607 18.5607C17.1213 19 16.4142 19 15 19H9C7.58579 19 6.87868 19 6.43934 18.5607C6 18.1213 6 17.4142 6 16V12Z" stroke="currentColor" stroke-width="1.5"/>
@@ -116,6 +116,9 @@
                 <div id="latest-blogs-container" class="list-layout">
                     <p class="loading-text">Loading latest blogs...</p>
                 </div>
+                <div class="view-more-box">
+                    <a href="#blogs" class="text-accent">View all blogs &rarr;</a>
+                </div>
             </section>
 
             <!-- SECTION: Deep Dives / Articles -->
@@ -134,6 +137,9 @@
                 <div id="latest-articles-container" class="list-layout">
                     <p class="loading-text">Loading the latest articles...</p>
                 </div>
+                <div class="view-more-box">
+                    <a href="#articles" class="text-accent">View all articles &rarr;</a>
+                </div>
             </section>
 
             <!-- SECTION: Projects -->
@@ -151,32 +157,67 @@
                 <div id="latest-projects-container" class="card-grid">
                     <p class="loading-text">Loading projects...</p>
                 </div>
+                <div class="view-more-box">
+                    <a href="#projects" class="text-accent">View all projects &rarr;</a>
+                </div>
             </section>
-            </div> <div id="view-about" class="hidden">
-            <h2 class="section-title">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M8 13H16C17.7107 13 19.1506 14.2804 19.3505 15.9795L20 21.5M8 13C6.28928 13 4.84936 14.2804 4.64948 15.9795L4 21.5M8 13V18C8 19.8856 8 20.8284 8.58579 21.4142C9.17157 22 10.1144 22 12 22C13.8856 22 14.8284 22 15.4142 21.4142C16 20.8284 16 19.8856 16 18V17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                    <circle cx="12" cy="6" r="4" stroke="currentColor" stroke-width="1.5"/>
-                </svg>
-                <span>About Me</span>
-            </h2>
-
-            <p class="section-desc">
-                Hey there, I'm Dat. I am exactly <span id="age-counter" class="text-accent" style="font-family: var(--font-mono);">0.000000000</span> years old.
-            </p>
-
-            <div id="about-bio-container">
-                <p class="loading-text">Fetching bio from Vault 1...</p>
             </div>
-        </div>
 
-        <!-- VIEW: Post Detail -->
-        <div id="view-post" class="hidden">
-            <a href="#home" id="back-to-home" class="back-link">&larr; Back to Home</a>
-            <div id="post-detail-container">
-                <p class="loading-text">Loading article...</p>
+            <!-- VIEW: All Blogs Page -->
+            <div id="view-blogs" class="hidden">
+                <h2 class="section-title">
+                    <span>All Blogs</span>
+                </h2>
+                <p class="section-desc">Life, thoughts, and everything else.</p>
+                <div id="all-blogs-container" class="list-layout">
+                    <p class="loading-text">Loading blogs...</p>
+                </div>
             </div>
-        </div>
+
+            <!-- VIEW: All Articles Page -->
+            <div id="view-articles" class="hidden">
+                <h2 class="section-title">
+                    <span>All Articles</span>
+                </h2>
+                <p class="section-desc">Technical deep dives and software engineering guides.</p>
+                <div id="all-articles-container" class="list-layout">
+                    <p class="loading-text">Loading articles...</p>
+                </div>
+            </div>
+
+            <!-- VIEW: All Projects Page -->
+            <div id="view-projects" class="hidden">
+                <h2 class="section-title">
+                    <span>All Projects</span>
+                </h2>
+                <p class="section-desc">Complete portfolio of systems and open-source applications.</p>
+                <div id="all-projects-container" class="card-grid">
+                    <p class="loading-text">Loading projects...</p>
+                </div>
+            </div>
+
+            <!-- VIEW: About Me Page -->
+            <div id="view-about" class="hidden">
+                <h2 class="section-title">
+                    <span>About Me</span>
+                </h2>
+
+                <p class="section-desc">
+                    Hey there, I'm Dat. I am exactly <span id="age-counter" class="text-accent" style="font-family: var(--font-mono);">0.000000000</span> years old.
+                </p>
+
+                <div id="about-bio-container">
+                    <p class="loading-text">Fetching bio from Vault 1...</p>
+                </div>
+            </div>
+
+            <!-- VIEW: Post Detail Page -->
+            <div id="view-post" class="hidden">
+                <a href="#home" id="back-to-home" class="back-link">&larr; Back to Home</a>
+                <div id="post-detail-container">
+                    <p class="loading-text">Loading article...</p>
+                </div>
+            </div>
         </div>
 
 

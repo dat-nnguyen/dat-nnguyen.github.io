@@ -1,0 +1,14 @@
+[
+  {
+    "id": "1",
+    "title": "Vanilla SPA Engine",
+    "description": "A zero-framework single page application router built with pure JavaScript.",
+    "link": "https://github.com/dat-nnguyen/personal-website"
+  },
+  {
+    "id": "2",
+    "title": "Interaction Service",
+    "description": "A decoupled comments database engine utilizing Node, Express, and PostgreSQL.",
+    "link": "https://github.com/dat-nnguyen/personal-website"
+  }
+]

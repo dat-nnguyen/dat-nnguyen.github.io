@@ -86,17 +86,21 @@ const navAbout = document.getElementById('nav-about');
 const navHome = document.getElementById('nav-home');
 
 const viewHome = document.getElementById('view-home');
+const viewBlogs = document.getElementById('view-blogs');
+const viewArticles = document.getElementById('view-articles');
+const viewProjects = document.getElementById('view-projects');
 const viewAbout = document.getElementById('view-about');
 const viewPost = document.getElementById('view-post');
 const backToHome = document.getElementById('back-to-home');
 const postDetailContainer = document.getElementById('post-detail-container');
 
 function showView(targetView) {
-  viewHome.classList.add('hidden');
-  viewAbout.classList.add('hidden');
-  viewPost.classList.add('hidden');
+  const views = [viewHome, viewBlogs, viewArticles, viewProjects, viewAbout, viewPost];
+  views.forEach((v) => {
+    if (v) v.classList.add('hidden');
+  });
 
-  targetView.classList.remove('hidden');
+  if (targetView) targetView.classList.remove('hidden');
   window.scrollTo(0, 0);
 }
 
@@ -180,12 +184,17 @@ async function openPost(slug) {
   }
 }
 
-// The generic fetcher for homepage lists
-async function fetchAndRenderPosts(category, containerId) {
+// Fetch posts (with optional limit for homepage sections)
+async function fetchAndRenderPosts(category, containerId, limit = null) {
   const container = document.getElementById(containerId);
+  if (!container) return;
 
   try {
-    const response = await fetch(`/api/posts?category=${category}`);
+    const url = limit
+      ? `/api/posts?category=${category}&limit=${limit}`
+      : `/api/posts?category=${category}`;
+
+    const response = await fetch(url);
     if (!response.ok) throw new Error('Gateway error');
 
     const posts = await response.json();
@@ -213,6 +222,39 @@ async function fetchAndRenderPosts(category, containerId) {
   }
 }
 
+// Fetch projects dynamically from /api/projects
+async function fetchAndRenderProjects(containerId, limit = null) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  try {
+    const url = limit ? `/api/projects?limit=${limit}` : '/api/projects';
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Gateway error');
+
+    const projects = await response.json();
+
+    if (projects.length === 0) {
+      container.innerHTML = `<p class="loading-text">No projects yet.</p>`;
+      return;
+    }
+
+    container.innerHTML = projects
+      .map(
+        (project) => `
+          <div class="card">
+              <h3><a href="${project.link || '#'}" target="_blank" rel="noopener noreferrer">${project.title}</a></h3>
+              <p>${project.description}</p>
+          </div>
+        `,
+      )
+      .join('');
+  } catch (error) {
+    console.error('Failed to load projects:', error);
+    container.innerHTML = `<p class="loading-text" style="color: #ff6b6b;">Failed to load projects.</p>`;
+  }
+}
+
 // ==========================================
 // SPA ROUTER: Hash-based Route Management
 // ==========================================
@@ -227,32 +269,30 @@ function handleRouting() {
     showView(viewAbout);
     fetchAboutContent();
     updateActiveNav('nav-about');
-  } else if (hash === '#blog') {
-    showView(viewHome);
+  } else if (hash === '#blog' || hash === '#blogs') {
+    showView(viewBlogs);
+    fetchAndRenderPosts('life', 'all-blogs-container');
     updateActiveNav('nav-blog');
-    const el = document.getElementById('section-blogs');
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
   } else if (hash === '#articles') {
-    showView(viewHome);
+    showView(viewArticles);
+    fetchAndRenderPosts('technical', 'all-articles-container');
     updateActiveNav('nav-articles');
-    const el = document.getElementById('section-articles');
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
   } else if (hash === '#projects') {
-    showView(viewHome);
+    showView(viewProjects);
+    fetchAndRenderProjects('all-projects-container');
     updateActiveNav('nav-projects');
-    const el = document.getElementById('section-projects');
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
   } else {
     showView(viewHome);
+    fetchAndRenderPosts('life', 'latest-blogs-container', 5);
+    fetchAndRenderPosts('technical', 'latest-articles-container', 5);
+    fetchAndRenderProjects('latest-projects-container', 4);
     updateActiveNav(null);
   }
 }
 
+
 window.addEventListener('hashchange', handleRouting);
 
-// Load posts and handle initial route on page load
 document.addEventListener('DOMContentLoaded', () => {
-  fetchAndRenderPosts('life', 'latest-blogs-container');
-  fetchAndRenderPosts('technical', 'latest-articles-container');
   handleRouting();
 });

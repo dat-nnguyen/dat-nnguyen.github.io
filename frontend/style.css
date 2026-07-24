@@ -339,3 +339,16 @@ a:hover {
 .hidden {
     display: none !important;
 }
+
+.view-more-box {
+    margin-top: 15px;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.nav-item.active {
+    background-color: var(--bg-card);
+    color: var(--accent-color);
+    font-weight: 600;
+    border-radius: 6px;
+}

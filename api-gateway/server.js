@@ -25,7 +25,16 @@ app.use(
   }),
 );
 
-// Route C: Interaction Service (Port 5002) - Handles Comments
+// Route C: Content Service (Port 5001) - Handles Projects
+app.use(
+  createProxyMiddleware({
+    pathFilter: '/api/projects',
+    target: 'http://localhost:5001',
+    changeOrigin: true,
+  }),
+);
+
+// Route D: Interaction Service (Port 5002) - Handles Comments
 app.use(
   createProxyMiddleware({
     pathFilter: '/api/comments',
@@ -41,6 +50,8 @@ app.listen(PORT, () => {
   console.log(`🚀 API Gateway is running on http://localhost:${PORT}`);
   console.log(`➡️  Routing /api/posts to Content Service (5001)`);
   console.log(`➡️  Routing /api/about to Content Service (5001)`);
+  console.log(`➡️  Routing /api/projects to Content Service (5001)`);
   console.log(`➡️  Routing /api/comments to Interaction Service (5002)`);
 });
+
 
