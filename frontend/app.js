@@ -117,11 +117,16 @@ function updateActiveNav(activeId) {
 const aboutContainer = document.getElementById('about-bio-container');
 let isAboutFetched = false;
 
+const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? ''
+  : 'https://datnguyen.onrender.com';
+
 async function fetchAboutContent() {
   if (isAboutFetched) return;
 
   try {
-    const response = await fetch('/api/about');
+    const response = await fetch(`${API_BASE_URL}/api/about`);
+
 
     if (!response.ok) {
       throw new Error(`Server returned status: ${response.status}`);
@@ -147,7 +152,8 @@ async function openPost(slug) {
   postDetailContainer.innerHTML = `<p class="loading-text">Loading article...</p>`;
 
   try {
-    const response = await fetch(`/api/posts/${slug}`);
+    const response = await fetch(`${API_BASE_URL}/api/posts/${slug}`);
+
     if (!response.ok) throw new Error('Post not found');
 
     const post = await response.json();
@@ -236,7 +242,7 @@ async function fetchLikes(slug) {
   }
 
   try {
-    const res = await fetch(`/api/comments/like/${slug}`);
+    const res = await fetch(`${API_BASE_URL}/api/comments/like/${slug}`);
     if (res.ok) {
       const data = await res.json();
       likeCountEl.innerText = data.likes || 0;
@@ -256,7 +262,7 @@ async function handleLikeClick(slug) {
   const action = isLiked ? 'unlike' : 'like';
 
   try {
-    const res = await fetch(`/api/comments/like/${slug}`, {
+    const res = await fetch(`${API_BASE_URL}/api/comments/like/${slug}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action }),
@@ -316,7 +322,7 @@ async function loadComments(slug) {
   if (!container) return;
 
   try {
-    const res = await fetch(`/api/comments/${slug}`);
+    const res = await fetch(`${API_BASE_URL}/api/comments/${slug}`);
     if (!res.ok) throw new Error('Failed to load comments');
 
     const comments = await res.json();
@@ -546,7 +552,7 @@ async function handleCommentSubmit(e, slug) {
   statusEl.style.color = 'var(--text-secondary)';
 
   try {
-    const res = await fetch('/api/comments', {
+    const res = await fetch(`${API_BASE_URL}/api/comments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -595,8 +601,8 @@ async function fetchAndRenderPosts(category, containerId, limit = null) {
 
   try {
     const url = limit
-      ? `/api/posts?category=${category}&limit=${limit}`
-      : `/api/posts?category=${category}`;
+      ? `${API_BASE_URL}/api/posts?category=${category}&limit=${limit}`
+      : `${API_BASE_URL}/api/posts?category=${category}`;
 
     const response = await fetch(url);
     if (!response.ok) throw new Error('Gateway error');
@@ -634,8 +640,9 @@ async function fetchAndRenderProjects(containerId, limit = null) {
   if (!container) return;
 
   try {
-    const url = limit ? `/api/projects?limit=${limit}` : '/api/projects';
+    const url = limit ? `${API_BASE_URL}/api/projects?limit=${limit}` : `${API_BASE_URL}/api/projects`;
     const response = await fetch(url);
+
     if (!response.ok) throw new Error('Gateway error');
 
     const projects = await response.json();
@@ -734,6 +741,23 @@ function setupMobileDrawer() {
     });
   });
 }
+
+// ARTICLE VIEW COUNTER
+async function incrementAndFetchViews(slug) {
+  const viewCountEl = document.getElementById('view-count');
+  if (!viewCountEl) return;
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/comments/views/${slug}`, { method: 'POST' });
+    if (res.ok) {
+      const data = await res.json();
+      viewCountEl.innerText = data.views || 1;
+    }
+  } catch (err) {
+    console.error('Failed to update views:', err);
+  }
+}
+
 // ==========================================
 // SPA ROUTER: Hash-based Route Management
 // ==========================================
