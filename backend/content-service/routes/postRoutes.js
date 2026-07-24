@@ -49,5 +49,43 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/posts/:slug -> Fetch single post by slug
+router.get('/:slug', async (req, res) => {
+  try {
+    const { slug } = req.params;
+    let files = [];
+    try {
+      files = await fs.readdir(postsDir);
+    } catch {
+      files = [];
+    }
+
+    for (const file of files) {
+      if (file.endsWith('.md')) {
+        const filePath = path.join(postsDir, file);
+        const rawContent = await fs.readFile(filePath, 'utf-8');
+        const parsed = matter(rawContent);
+        const itemSlug = parsed.data.slug || file.replace('.md', '');
+
+        if (itemSlug === slug || file.replace('.md', '') === slug) {
+          return res.json({
+            title: parsed.data.title || slug,
+            category: parsed.data.category || parsed.data.type || 'technical',
+            slug: itemSlug,
+            createdAt: parsed.data.lastUpdated || parsed.data.date || new Date().toISOString(),
+            content: marked.parse(parsed.content),
+          });
+        }
+      }
+    }
+
+    res.status(404).json({ error: 'Post not found' });
+  } catch (error) {
+    console.error('Failed to fetch post by slug:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 module.exports = router;
+
 

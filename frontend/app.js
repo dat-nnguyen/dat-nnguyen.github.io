@@ -87,19 +87,31 @@ const navHome = document.getElementById('nav-home');
 
 const viewHome = document.getElementById('view-home');
 const viewAbout = document.getElementById('view-about');
-// navigate to About me page
-navAbout.addEventListener('click', (e) => {
-  e.preventDefault();
-  viewHome.classList.add('hidden');
-  viewAbout.classList.remove('hidden');
-});
+const viewPost = document.getElementById('view-post');
+const backToHome = document.getElementById('back-to-home');
+const postDetailContainer = document.getElementById('post-detail-container');
 
-// Navigate back to home
+function showView(targetView) {
+  viewHome.classList.add('hidden');
+  viewAbout.classList.add('hidden');
+  viewPost.classList.add('hidden');
+
+  targetView.classList.remove('hidden');
+  window.scrollTo(0, 0);
+}
+
+// Navigate to Home
 navHome.addEventListener('click', (e) => {
   e.preventDefault();
-  viewAbout.classList.add('hidden');
-  viewHome.classList.remove('hidden');
+  showView(viewHome);
 });
+
+if (backToHome) {
+  backToHome.addEventListener('click', (e) => {
+    e.preventDefault();
+    showView(viewHome);
+  });
+}
 
 const birthday = new Date('2006-11-19').getTime();
 const ageElement = document.getElementById('age-counter');
@@ -108,11 +120,9 @@ if (ageElement) {
   setInterval(() => {
     const now = Date.now();
     const ageInMs = now - birthday;
-
     const ageInYears = ageInMs / (1000 * 60 * 60 * 24 * 365.25);
-
     ageElement.innerText = ageInYears.toFixed(9);
-  }, 50); // Updates every 50 milliseconds!
+  }, 50);
 }
 
 const aboutContainer = document.getElementById('about-bio-container');
@@ -122,51 +132,81 @@ async function fetchAboutContent() {
   if (isAboutFetched) return;
 
   try {
-    const response = await fetch('http://localhost:5050/api/about');
+    const response = await fetch('/api/about');
 
     if (!response.ok) {
-      throw new Error(`Gateway returned status: ${response.status}`);
+      throw new Error(`Server returned status: ${response.status}`);
     }
 
-    // 3. Parse the JSON response
     const data = await response.json();
-
-    // 4. Inject the data into the HTML
-    // Assuming your database returns an object like: { content: "I am a software engineer..." }
-    aboutContainer.innerHTML = `<p class="section-desc">${data.content}</p>`;
-
-    // 5. Flip the safety switch so we never fetch this again during this session!
+    aboutContainer.innerHTML = `<div class="markdown-body">${data.content}</div>`;
     isAboutFetched = true;
-
   } catch (error) {
-    console.error("Failed to fetch bio from Vault 1:", error);
-    aboutContainer.innerHTML = `<p class="section-desc" style="color: #ff6b6b;">Error: Could not connect to Vault 1. Is the backend running?</p>`;
+    console.error("Failed to fetch bio:", error);
+    aboutContainer.innerHTML = `<p class="section-desc" style="color: #ff6b6b;">Error: Could not load bio. Is the backend running?</p>`;
   }
 }
 
 navAbout.addEventListener('click', (e) => {
   e.preventDefault();
-
-  viewHome.classList.add('hidden');
-  viewAbout.classList.remove('hidden');
-
+  showView(viewAbout);
   fetchAboutContent();
 });
 
 function formatDate(dateString) {
-  const options = { month: 'long', day: 'numeric' };
+  const options = { month: 'long', day: 'numeric', year: 'numeric' };
   return new Date(dateString).toLocaleDateString('en-US', options);
 }
+
+// Fetch single post and display in view-post
+async function openPost(slug) {
+  showView(viewPost);
+  postDetailContainer.innerHTML = `<p class="loading-text">Loading article...</p>`;
+
+  try {
+    const response = await fetch(`/api/posts/${slug}`);
+    if (!response.ok) throw new Error('Post not found');
+
+    const post = await response.json();
+    postDetailContainer.innerHTML = `
+      <article class="post-detail">
+        <header class="post-header">
+          <h1 class="post-title">${post.title}</h1>
+          <div class="post-meta">
+            <span class="post-date">${formatDate(post.createdAt)}</span> &bull; 
+            <span class="post-category">${post.category}</span>
+          </div>
+        </header>
+        <hr class="post-divider" />
+        <div class="markdown-body">
+          ${post.content}
+        </div>
+      </article>
+    `;
+  } catch (error) {
+    console.error('Failed to open post:', error);
+    postDetailContainer.innerHTML = `<p class="loading-text" style="color: #ff6b6b;">Failed to load article.</p>`;
+  }
+}
+
+// Attach event listener for clicking post links dynamically
+document.addEventListener('click', (e) => {
+  const link = e.target.closest('.post-link');
+  if (link) {
+    e.preventDefault();
+    const slug = link.getAttribute('data-slug');
+    if (slug) {
+      openPost(slug);
+    }
+  }
+});
 
 // The generic fetcher
 async function fetchAndRenderPosts(category, containerId) {
   const container = document.getElementById(containerId);
 
   try {
-    // Notice we are knocking on the Gateway's door (5050) and passing the category query!
-    const response = await fetch(
-      `http://localhost:5050/api/posts?category=${category}`,
-    );
+    const response = await fetch(`/api/posts?category=${category}`);
     if (!response.ok) throw new Error('Gateway error');
 
     const posts = await response.json();
@@ -176,7 +216,6 @@ async function fetchAndRenderPosts(category, containerId) {
       return;
     }
 
-    // Map over the posts and generate the HTML blocks
     container.innerHTML = posts
       .map(
         (post) => `
@@ -192,21 +231,6 @@ async function fetchAndRenderPosts(category, containerId) {
   } catch (error) {
     console.error(`Failed to load ${category}:`, error);
     container.innerHTML = `<p class="loading-text" style="color: #ff6b6b;">Failed to load posts.</p>`;
-  }
-}
-
-async function fetchBio() {
-  try {
-    const respose = await fech('api/about');
-
-    if (!response.ok) {
-      throw new Error('HTTP error! status: ${resposne.status}');
-    }
-
-    const data = await response.json();
-    console.log("Markdown data: ", data);
-  } catch (error) {
-    console.error('Tunnel collapsed!', error);
   }
 }
 
