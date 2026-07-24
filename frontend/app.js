@@ -114,18 +114,6 @@ function updateActiveNav(activeId) {
   }
 }
 
-const birthday = new Date('2006-11-19').getTime();
-const ageElement = document.getElementById('age-counter');
-
-if (ageElement) {
-  setInterval(() => {
-    const now = Date.now();
-    const ageInMs = now - birthday;
-    const ageInYears = ageInMs / (1000 * 60 * 60 * 24 * 365.25);
-    ageElement.innerText = ageInYears.toFixed(9);
-  }, 50);
-}
-
 const aboutContainer = document.getElementById('about-bio-container');
 let isAboutFetched = false;
 
@@ -177,12 +165,133 @@ async function openPost(slug) {
           ${post.content}
         </div>
       </article>
+
+      <!-- COMMENTS SECTION -->
+      <section class="comments-section">
+        <h3 class="comments-header">💬 What do you think?</h3>
+        
+        <form id="comment-form" class="comment-form">
+          <h4 class="form-title">Leave a Comment</h4>
+          <div class="form-row">
+            <input type="text" id="comment-author" placeholder="Your Name" required class="form-input" />
+            <input type="email" id="comment-email" placeholder="Your Email" required class="form-input" />
+          </div>
+          <textarea id="comment-content" placeholder="Write your thoughts..." required class="form-textarea" rows="4"></textarea>
+          <button type="submit" class="comment-submit-btn">Submit Comment</button>
+          <p id="comment-form-status" class="form-status"></p>
+        </form>
+
+        <div id="comments-list-container" class="comments-list">
+          <p class="loading-text">Loading comments...</p>
+        </div>
+      </section>
     `;
+
+    const commentForm = document.getElementById('comment-form');
+    if (commentForm) {
+      commentForm.addEventListener('submit', (e) => handleCommentSubmit(e, slug));
+    }
+
+    loadComments(slug);
   } catch (error) {
     console.error('Failed to open post:', error);
     postDetailContainer.innerHTML = `<p class="loading-text" style="color: #ff6b6b;">Failed to load article.</p>`;
   }
 }
+
+async function loadComments(slug) {
+  const container = document.getElementById('comments-list-container');
+  if (!container) return;
+
+  try {
+    const res = await fetch(`/api/comments/${slug}`);
+    if (!res.ok) throw new Error('Failed to load comments');
+
+    const comments = await res.json();
+
+    if (comments.length === 0) {
+      container.innerHTML = `<p class="no-comments-text">No comments yet. Be the first to start the conversation!</p>`;
+      return;
+    }
+
+    container.innerHTML = comments
+      .map(
+        (c) => `
+          <div class="comment-card">
+            <div class="comment-header">
+              <span class="comment-author">👤 ${escapeHtml(c.author_name || c.authorName)}</span>
+              <span class="comment-date">${formatDate(c.created_at || c.createdAt)}</span>
+            </div>
+            <div class="comment-body">${escapeHtml(c.content)}</div>
+          </div>
+        `,
+      )
+      .join('');
+  } catch (err) {
+    console.error('Error fetching comments:', err);
+    container.innerHTML = `<p class="loading-text" style="color: #ff6b6b;">Could not load comments.</p>`;
+  }
+}
+
+async function handleCommentSubmit(e, slug) {
+  e.preventDefault();
+
+  const authorInput = document.getElementById('comment-author');
+  const emailInput = document.getElementById('comment-email');
+  const contentInput = document.getElementById('comment-content');
+  const statusEl = document.getElementById('comment-form-status');
+
+  const authorName = authorInput.value.trim();
+  const authorEmail = emailInput.value.trim();
+  const content = contentInput.value.trim();
+
+  if (!authorName || !authorEmail || !content) return;
+
+  statusEl.innerText = 'Submitting comment...';
+  statusEl.style.color = 'var(--text-secondary)';
+
+  try {
+    const res = await fetch('/api/comments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        articleId: slug,
+        authorName,
+        authorEmail,
+        content,
+      }),
+    });
+
+    if (!res.ok) throw new Error('Submission failed');
+
+    statusEl.innerText = 'Comment posted successfully!';
+    statusEl.style.color = '#4cd964';
+
+    authorInput.value = '';
+    emailInput.value = '';
+    contentInput.value = '';
+
+    setTimeout(() => {
+      statusEl.innerText = '';
+      loadComments(slug);
+    }, 1000);
+  } catch (err) {
+    console.error('Failed to submit comment:', err);
+    statusEl.innerText = 'Failed to post comment. Please try again.';
+    statusEl.style.color = '#ff6b6b';
+  }
+}
+
+function escapeHtml(text) {
+  if (!text) return '';
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 
 // Fetch posts (with optional limit for homepage sections)
 async function fetchAndRenderPosts(category, containerId, limit = null) {

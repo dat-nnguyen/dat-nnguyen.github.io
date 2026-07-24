@@ -1,14 +1,26 @@
 [
   {
     "id": "1",
-    "title": "Vanilla SPA Engine",
-    "description": "A zero-framework single page application router built with pure JavaScript.",
-    "link": "https://github.com/dat-nnguyen/personal-website"
+    "title": "Chrome Dino AI",
+    "description": "An artificial intelligence / neuroevolution agent trained to play the Chrome Dinosaur game.",
+    "link": "https://github.com/dat-nnguyen/chrome-dino-ai"
   },
   {
     "id": "2",
-    "title": "Interaction Service",
-    "description": "A decoupled comments database engine utilizing Node, Express, and PostgreSQL.",
-    "link": "https://github.com/dat-nnguyen/personal-website"
+    "title": "Arkanoid Game",
+    "description": "A classic arcade brick-breaker game built with interactive paddle physics and power-ups.",
+    "link": "https://github.com/dat-nnguyen/ArkanoidGame"
+  },
+  {
+    "id": "3",
+    "title": "Java Chess Engine",
+    "description": "A custom chess engine and AI evaluation algorithm written from scratch in Java.",
+    "link": "https://github.com/dat-nnguyen/java-chess-engine"
+  },
+  {
+    "id": "4",
+    "title": "Spinning Donut",
+    "description": "A 3D ASCII spinning donut animation renderer calculating torus illumination and projection math.",
+    "link": "https://github.com/dat-nnguyen/SpinningDonut"
   }
 ]
