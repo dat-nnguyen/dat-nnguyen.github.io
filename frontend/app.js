@@ -796,6 +796,10 @@ window.addEventListener('hashchange', handleRouting);
 
 document.addEventListener('DOMContentLoaded', () => {
   handleRouting();
-  setupSearchListener();
-  setupMobileDrawer();
+  if (typeof setupSearchListener === 'function') {
+    setupSearchListener();
+  }
+  if (typeof setupMobileDrawer === 'function') {
+    setupMobileDrawer();
+  }
 });
