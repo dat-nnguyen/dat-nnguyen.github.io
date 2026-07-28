@@ -13,7 +13,7 @@
     "install-all": "npm install --prefix api-gateway && npm install --prefix backend/content-service && npm install --prefix backend/interaction-service",
     "start": "node api-gateway/server.js",
     "dev": "vite frontend",
-    "build": "vite build frontend",
+    "build": "npm run build --prefix frontend",
     "preview": "vite preview frontend"
   },
   "dependencies": {
