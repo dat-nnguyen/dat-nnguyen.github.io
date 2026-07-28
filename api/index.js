@@ -13,12 +13,12 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.use('/api/posts', postRoutes);
-app.use('/api/about', aboutRoutes);
-app.use('/api/projects', projectRoutes);
-app.use('/api/comments', commentsRoutes);
+app.use(['/api/posts', '/posts'], postRoutes);
+app.use(['/api/about', '/about'], aboutRoutes);
+app.use(['/api/projects', '/projects'], projectRoutes);
+app.use(['/api/comments', '/comments'], commentsRoutes);
 
-app.get('/api', (req, res) => {
+app.get(['/api', '/'], (req, res) => {
   res.json({
     message: "🚀 Dat Nguyen's Personal Website API (Vercel Serverless)",
     status: 'online',
@@ -26,6 +26,6 @@ app.get('/api', (req, res) => {
   });
 });
 
-app.get('/api/health', (req, res) => res.json({ status: 'ok', service: 'API Gateway (Serverless)' }));
+app.get(['/api/health', '/health'], (req, res) => res.json({ status: 'ok', service: 'API Gateway (Serverless)' }));
 
 module.exports = app;

@@ -5,7 +5,15 @@ const fs = require('fs').promises;
 const matter = require('gray-matter');
 const marked = require('marked');
 
-const postsDir = path.join(__dirname, '../markdown_content/posts');
+async function getPostsDir() {
+  const primary = path.join(__dirname, '../markdown_content/posts');
+  try {
+    await fs.access(primary);
+    return primary;
+  } catch {
+    return path.join(process.cwd(), 'backend/content-service/markdown_content/posts');
+  }
+}
 
 function calculateReadingTime(content) {
   const words = content.trim().split(/\s+/).filter(Boolean).length;
@@ -16,6 +24,7 @@ function calculateReadingTime(content) {
 // GET /api/posts -> Fetch all posts, optionally filtered by category
 router.get('/', async (req, res) => {
   try {
+    const postsDir = await getPostsDir();
     let files = [];
     try {
       files = await fs.readdir(postsDir);
@@ -70,7 +79,7 @@ router.get('/', async (req, res) => {
 // GET /api/posts/:slug -> Fetch single post by slug
 router.get('/:slug', async (req, res) => {
   try {
-    const { slug } = req.params;
+    const postsDir = await getPostsDir();
     let files = [];
     try {
       files = await fs.readdir(postsDir);

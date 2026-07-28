@@ -10,7 +10,12 @@ const marked = require('marked');
 // ==========================================
 router.get('/', async (req, res) => {
   try {
-    const filePath = path.join(__dirname, '../markdown_content/about.md');
+    let filePath = path.join(__dirname, '../markdown_content/about.md');
+    try {
+      await fs.access(filePath);
+    } catch {
+      filePath = path.join(process.cwd(), 'backend/content-service/markdown_content/about.md');
+    }
     const rawMarkdown = await fs.readFile(filePath, 'utf-8');
     const parsedFile = matter(rawMarkdown);
     const htmlContent = marked.parse(parsedFile.content);
