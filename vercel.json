@@ -1,4 +1,6 @@
 {
+	"buildCommand": "npm run build",
+	"outputDirectory": "frontend/dist",
 	"functions": {
 		"api/index.js": {
 			"includeFiles": "backend/**"
@@ -6,7 +8,7 @@
 	},
 	"rewrites": [
 		{
-			"source": "/api/(.*)",
+			"source": "/api/:path*",
 			"destination": "/api/index.js"
 		}
 	]
