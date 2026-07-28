@@ -1,10 +1,10 @@
 const express = require('express');
 const cors = require('cors');
 
-const postRoutes = require('../backend/content-service/routes/postRoutes');
-const aboutRoutes = require('../backend/content-service/routes/aboutRoutes');
-const projectRoutes = require('../backend/content-service/routes/projectRoutes');
-const commentsRoutes = require('../backend/interaction-service/routes/commentsRoutes')({
+const postRoutes = require('../backend/content-service/routes/postRoutes.js');
+const aboutRoutes = require('../backend/content-service/routes/aboutRoutes.js');
+const projectRoutes = require('../backend/content-service/routes/projectRoutes.js');
+const commentsRoutes = require('../backend/interaction-service/routes/commentsRoutes.js')({
   query: () => Promise.reject(new Error('PostgreSQL not configured')),
 });
 
