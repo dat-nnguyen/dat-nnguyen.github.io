@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node api-gateway/server.js",
     "dev": "vite frontend",
-    "build": "npm run build --prefix frontend",
+    "build": "cd frontend && npx vite build --outDir ../dist --emptyOutDir",
     "preview": "vite preview frontend"
   },
   "dependencies": {
