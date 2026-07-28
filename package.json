@@ -3,11 +3,27 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "workspaces": [
+    "api-gateway",
+    "backend/content-service",
+    "backend/interaction-service",
+    "frontend"
+  ],
   "scripts": {
+    "install-all": "npm install --prefix api-gateway && npm install --prefix backend/content-service && npm install --prefix backend/interaction-service",
     "start": "node api-gateway/server.js",
     "dev": "vite frontend",
     "build": "vite build frontend",
     "preview": "vite preview frontend"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "gray-matter": "^4.0.3",
+    "http-proxy-middleware": "^4.2.0",
+    "marked": "^18.0.7",
+    "mongoose": "^9.7.4",
+    "pg": "^8.11.5"
   },
   "devDependencies": {
     "prettier": "^3.3.1",

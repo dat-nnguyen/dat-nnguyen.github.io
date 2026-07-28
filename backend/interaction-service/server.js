@@ -8,7 +8,8 @@ app.use(express.json()); // allow Express to read JSON data from front-end
 // connect to PostgreSQL database
 const pool = new Pool({
   connectionString:
-    'postgresql://admin:secretpassword@localhost:5432/interaction_db',
+    process.env.DATABASE_URL || 'postgresql://admin:secretpassword@localhost:5432/interaction_db',
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
 });
 
 // testing connection to database

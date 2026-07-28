@@ -117,9 +117,7 @@ function updateActiveNav(activeId) {
 const aboutContainer = document.getElementById('about-bio-container');
 let isAboutFetched = false;
 
-const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? ''
-  : 'https://datnguyen.onrender.com';
+const API_BASE_URL = '';
 
 async function fetchAboutContent() {
   if (isAboutFetched) return;
