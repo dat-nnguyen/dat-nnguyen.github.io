@@ -2,15 +2,7 @@
   "name": "personal-website",
   "private": true,
   "version": "0.0.0",
-  "type": "module",
-  "workspaces": [
-    "api-gateway",
-    "backend/content-service",
-    "backend/interaction-service",
-    "frontend"
-  ],
   "scripts": {
-    "install-all": "npm install --prefix api-gateway && npm install --prefix backend/content-service && npm install --prefix backend/interaction-service",
     "start": "node api-gateway/server.js",
     "dev": "vite frontend",
     "build": "npm run build --prefix frontend",
@@ -30,4 +22,3 @@
     "vite": "^5.1.6"
   }
 }
-
