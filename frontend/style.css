@@ -251,17 +251,20 @@ a:hover {
 }
 
 /* 7. SIDEBAR FOOTER & COFFEE BUTTON */
-.sidebar-coffee {
-    margin-top: 25px;
-    padding-top: 20px;
-    border-top: 1px solid var(--border-color);
+.sidebar-spacer {
+    flex: 1;
 }
 
 .sidebar-copyright {
-    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
     font-size: 0.82rem;
     color: var(--text-secondary);
     line-height: 1.4;
+}
+
+.sidebar-coffee {
+    margin-top: 12px;
 }
 
 .coffee-btn {
