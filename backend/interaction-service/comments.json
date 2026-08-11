@@ -1,5 +1,13 @@
 [
   {
+    "id": 1786435968988,
+    "article_id": "test-slug",
+    "author_name": "Dat",
+    "author_email": "test@test.com",
+    "content": "Great post!",
+    "created_at": "2026-08-11T08:12:48.988Z"
+  },
+  {
     "id": 1786435101173,
     "article_id": "test-slug",
     "author_name": "Tester",

@@ -50,10 +50,15 @@ app.get('/health', (req, res) => res.json({ status: 'ok', service: 'API Gateway'
 
 app.use((req, res) => res.status(404).json({ error: 'Not Found' }));
 
+// Express 5 error-handling middleware — catches JSON parse errors and unhandled route errors
+app.use((err, req, res, next) => {
+  console.error(`[API Gateway Error] ${req.method} ${req.path}:`, err.message);
+  const status = err.status || err.statusCode || 500;
+  res.status(status).json({ error: err.message || 'Internal Server Error' });
+});
 
 app.listen(PORT, () => {
   console.log(`🚀 API Gateway is running on port ${PORT}`);
 });
 
-
-
+module.exports = app;
