@@ -86,6 +86,7 @@ router.get('/', async (req, res) => {
 // GET /api/posts/:slug -> Fetch single post by slug
 router.get('/:slug', async (req, res) => {
   try {
+    const { slug } = req.params;
     const postsDir = await getPostsDir();
     let files = [];
     try {
