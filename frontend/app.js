@@ -117,7 +117,8 @@ function updateActiveNav(activeId) {
 const aboutContainer = document.getElementById('about-bio-container');
 let isAboutFetched = false;
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+const rawApiBase = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
+const API_BASE_URL = rawApiBase.endsWith('/api') ? rawApiBase.slice(0, -4) : rawApiBase;
 
 async function fetchAboutContent() {
   if (isAboutFetched) return;
