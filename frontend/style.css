@@ -250,23 +250,18 @@ a:hover {
     color: var(--accent-color);
 }
 
-/* 7. FOOTER & COFFEE BUTTON */
-.site-footer {
-    margin-top: 60px;
-    padding-top: 30px;
-    border-top: 1px solid var(--border-color);
-    color: var(--text-secondary);
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    padding-bottom: 50px;
-    font-size: 0.95rem;
-}
-
+/* 7. SIDEBAR FOOTER & COFFEE BUTTON */
 .sidebar-coffee {
     margin-top: 25px;
     padding-top: 20px;
     border-top: 1px solid var(--border-color);
+}
+
+.sidebar-copyright {
+    margin-top: 20px;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
 }
 
 .coffee-btn {
