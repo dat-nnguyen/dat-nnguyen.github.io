@@ -6,13 +6,20 @@ const matter = require('gray-matter');
 const marked = require('marked');
 
 async function getPostsDir() {
-  const primary = path.join(__dirname, '../markdown_content/posts');
-  try {
-    await fs.access(primary);
-    return primary;
-  } catch {
-    return path.join(process.cwd(), 'backend/content-service/markdown_content/posts');
+  const candidates = [
+    path.join(__dirname, '../markdown_content/posts'),
+    path.join(__dirname, '../../content-service/markdown_content/posts'),
+    path.join(process.cwd(), 'backend/content-service/markdown_content/posts'),
+    path.join(process.cwd(), 'content-service/markdown_content/posts'),
+    path.join(process.cwd(), 'markdown_content/posts'),
+  ];
+  for (const dir of candidates) {
+    try {
+      await fs.access(dir);
+      return dir;
+    } catch {}
   }
+  return candidates[0];
 }
 
 function calculateReadingTime(content) {

@@ -20,7 +20,7 @@ Our personal website architecture consists of two decoupled layers:
 1. **Frontend**: Built with Vite and vanilla JavaScript, hosted on GitHub Pages with automated CI/CD via GitHub Actions.
 2. **Backend API Gateway**: A Node.js Express service hosted on Render that serves content, handles post endpoints, and processes visitor interactions.
 
-```
+```text
 +------------------------+          HTTP Fetch          +--------------------------+
 |  GitHub Pages          |  ------------------------->  |  Render (Node.js API)    |
 |  (Static Assets/Vite)  |   https://...onrender.com    |  (Express & Gateway)     |
@@ -32,9 +32,11 @@ Our personal website architecture consists of two decoupled layers:
 ## Key Deployment Steps
 
 ### 1. Setting up GitHub Actions CI/CD
+
 We automated static website builds by adding a `.github/workflows/deploy.yml` workflow. Every time code is pushed to `main`, GitHub Actions automatically compiles the Vite bundle and deploys the static output directly to GitHub Pages.
 
 ### 2. Dynamically Configuring API URLs
+
 To make sure the frontend calls the live Render API instead of relative local endpoints, we configure `VITE_API_BASE_URL` dynamically:
 
 ```javascript
