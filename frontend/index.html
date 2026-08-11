@@ -107,14 +107,6 @@
 
         <div class="sidebar-coffee">
             <button id="coffee-btn" class="coffee-btn">☕ Buy me a coffee</button>
-            <div id="qr-box" class="qr-hidden">
-                <img src="qr-code.png" alt="Bank QR Code" class="qr-image">
-                <div class="bank-details">
-                    <p><strong>Bank:</strong> Vietcombank</p>
-                    <p><strong>Account:</strong> 1041588320</p>
-                    <p><strong>Name:</strong> Nguyen Tuan Dat</p>
-                </div>
-            </div>
         </div>
     </aside>
 
@@ -266,6 +258,22 @@
     </main>
 </div>
 
+
+<!-- COFFEE MODAL OVERLAY -->
+<div id="qr-modal" class="qr-modal-overlay qr-modal-hidden">
+    <div class="qr-modal-content">
+        <button id="qr-modal-close" class="qr-modal-close">&times;</button>
+        <h3 class="qr-modal-title">☕ Buy me a coffee</h3>
+        <div class="qr-modal-body">
+            <img src="qr-code.png" alt="Bank QR Code" class="qr-image">
+            <div class="bank-details">
+                <p><strong>Bank:</strong> Vietcombank</p>
+                <p><strong>Account:</strong> 1041588320</p>
+                <p><strong>Name:</strong> Nguyen Tuan Dat</p>
+            </div>
+        </div>
+    </div>
+</div>
 
 <div id="toast-container"></div>
 <script type="module" src="app.js"></script>

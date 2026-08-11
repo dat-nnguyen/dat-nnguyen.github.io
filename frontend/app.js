@@ -1,14 +1,19 @@
-// 1. Coffee Button Toggle Logic
+// 1. Coffee Button Modal Logic
 const coffeeBtn = document.getElementById('coffee-btn');
-const qrBox = document.getElementById('qr-box');
+const qrModal = document.getElementById('qr-modal');
+const qrModalClose = document.getElementById('qr-modal-close');
 
 coffeeBtn.addEventListener('click', () => {
-  if (qrBox.classList.contains('qr-hidden')) {
-    qrBox.classList.remove('qr-hidden');
-    qrBox.classList.add('qr-visible');
-  } else {
-    qrBox.classList.remove('qr-visible');
-    qrBox.classList.add('qr-hidden');
+  qrModal.classList.remove('qr-modal-hidden');
+});
+
+qrModalClose.addEventListener('click', () => {
+  qrModal.classList.add('qr-modal-hidden');
+});
+
+qrModal.addEventListener('click', (e) => {
+  if (e.target === qrModal) {
+    qrModal.classList.add('qr-modal-hidden');
   }
 });
 
