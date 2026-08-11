@@ -4,33 +4,45 @@ const path = require('path');
 const fs = require('fs').promises;
 
 const commentsJsonPath = path.join(__dirname, '../comments.json');
+let inMemoryComments = [];
 
 async function getFallbackComments() {
   try {
     const data = await fs.readFile(commentsJsonPath, 'utf-8');
     return JSON.parse(data);
   } catch {
-    return [];
+    return inMemoryComments;
   }
 }
 
 async function saveFallbackComments(comments) {
-  await fs.writeFile(commentsJsonPath, JSON.stringify(comments, null, 2), 'utf-8');
+  inMemoryComments = comments;
+  try {
+    await fs.writeFile(commentsJsonPath, JSON.stringify(comments, null, 2), 'utf-8');
+  } catch (err) {
+    console.warn('Could not save comments to disk, using in-memory:', err.message);
+  }
 }
 
 const likesJsonPath = path.join(__dirname, '../likes.json');
+let inMemoryLikes = {};
 
 async function getLikes() {
   try {
     const data = await fs.readFile(likesJsonPath, 'utf-8');
     return JSON.parse(data);
   } catch {
-    return {};
+    return inMemoryLikes;
   }
 }
 
 async function saveLikes(likes) {
-  await fs.writeFile(likesJsonPath, JSON.stringify(likes, null, 2), 'utf-8');
+  inMemoryLikes = likes;
+  try {
+    await fs.writeFile(likesJsonPath, JSON.stringify(likes, null, 2), 'utf-8');
+  } catch (err) {
+    console.warn('Could not save likes to disk, using in-memory:', err.message);
+  }
 }
 
 module.exports = (pool) => {
