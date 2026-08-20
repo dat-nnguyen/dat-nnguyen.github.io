@@ -331,17 +331,34 @@ async function loadComments(slug) {
 }
 
 async function deleteComment(commentId, slug) {
+  let adminKey = localStorage.getItem('blog_admin_key');
+
+  if (!adminKey) {
+    adminKey = prompt('🔒 Admin Access Required\nPlease enter the Admin Passkey to delete this comment:');
+    if (!adminKey) return; // User cancelled prompt
+  }
+
   if (!confirm('Are you sure you want to delete this comment?')) return;
 
   try {
     const res = await fetch(`${API_BASE_URL}/api/comments/${commentId}`, {
       method: 'DELETE',
+      headers: {
+        'x-admin-key': adminKey,
+      },
     });
 
     if (!res.ok) {
+      if (res.status === 403 || res.status === 401) {
+        localStorage.removeItem('blog_admin_key');
+        throw new Error('Invalid Admin Passkey. Only the blog owner can delete comments.');
+      }
       const data = await res.json().catch(() => ({}));
       throw new Error(data.error || 'Failed to delete comment');
     }
+
+    // Save verified admin key for convenient subsequent deletions
+    localStorage.setItem('blog_admin_key', adminKey);
 
     const commentEl = document.getElementById(`comment-${commentId}`);
     if (commentEl) {
@@ -356,11 +373,12 @@ async function deleteComment(commentId, slug) {
     }
   } catch (err) {
     console.error('Failed to delete comment:', err);
-    alert(`Could not delete comment: ${err.message}`);
+    alert(`🚫 ${err.message}`);
   }
 }
 
 window.deleteComment = deleteComment;
+
 
 
 function getAvatarUrl(email, name) {

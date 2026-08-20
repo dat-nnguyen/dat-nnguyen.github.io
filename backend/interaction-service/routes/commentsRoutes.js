@@ -171,10 +171,18 @@ module.exports = (pool) => {
     }
   });
 
-  // DELETE comment by ID
+  // DELETE comment by ID (protected by Admin Key)
   router.delete('/:id', async (req, res) => {
     try {
       const { id } = req.params;
+      const expectedAdminKey = process.env.ADMIN_KEY || 'admin123';
+      const providedKey = req.headers['x-admin-key'] || req.query.adminKey || req.body?.adminKey;
+
+      if (!providedKey || providedKey !== expectedAdminKey) {
+        return res.status(403).json({
+          error: 'Unauthorized: Invalid or missing Admin Key. Only the site administrator can delete comments.',
+        });
+      }
 
       // Try PostgreSQL first
       try {
