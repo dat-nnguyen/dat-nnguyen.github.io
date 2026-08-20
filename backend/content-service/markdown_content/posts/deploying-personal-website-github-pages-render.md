@@ -1,7 +1,7 @@
 ---
-title: "Deploying a Modern Personal Portfolio with GitHub Pages & Render"
+title: "Deploying a Modern Personal Portfolio with GitHub Pages & Railway"
 category: "technical"
-slug: "deploying-personal-website-github-pages-render"
+slug: "deploying-personal-website-github-pages-railway"
 date: "2026-08-11"
 ---
 
@@ -9,7 +9,7 @@ date: "2026-08-11"
 
 Building a personal portfolio website is a rite of passage for software engineers. However, managing hosting costs and deployment complexity can often be a headache.
 
-In this article, I share how I deployed my personal website for free using **GitHub Pages** for the static frontend and **Render** for the Node.js API Gateway backend.
+In this article, I share how I deployed my personal website for free using **GitHub Pages** for the static frontend and **Railway** for the Node.js API Gateway backend and database.
 
 ---
 
@@ -18,12 +18,12 @@ In this article, I share how I deployed my personal website for free using **Git
 Our personal website architecture consists of two decoupled layers:
 
 1. **Frontend**: Built with Vite and vanilla JavaScript, hosted on GitHub Pages with automated CI/CD via GitHub Actions.
-2. **Backend API Gateway**: A Node.js Express service hosted on Render that serves content, handles post endpoints, and processes visitor interactions.
+2. **Backend API Gateway**: A Node.js Express service hosted on Railway that serves content, handles post endpoints, and processes visitor interactions.
 
 ```text
 +------------------------+          HTTP Fetch          +--------------------------+
-|  GitHub Pages          |  ------------------------->  |  Render (Node.js API)    |
-|  (Static Assets/Vite)  |   https://...onrender.com    |  (Express & Gateway)     |
+|  GitHub Pages          |  ------------------------->  |  Railway (Node.js API)   |
+|  (Static Assets/Vite)  |   https://...up.railway.app  |  (Express & Gateway)     |
 +------------------------+                              +--------------------------+
 ```
 
@@ -37,7 +37,7 @@ We automated static website builds by adding a `.github/workflows/deploy.yml` wo
 
 ### 2. Dynamically Configuring API URLs
 
-To make sure the frontend calls the live Render API instead of relative local endpoints, we configure `VITE_API_BASE_URL` dynamically:
+To make sure the frontend calls the live Railway API instead of relative local endpoints, we configure `VITE_API_BASE_URL` dynamically:
 
 ```javascript
 const rawApiBase = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
@@ -48,4 +48,4 @@ const API_BASE_URL = rawApiBase.endsWith('/api') ? rawApiBase.slice(0, -4) : raw
 
 ## Conclusion
 
-Combining static hosting on GitHub Pages with serverless/containerized backend services on Render gives us high reliability, zero hosting costs, and fast global delivery.
+Combining static hosting on GitHub Pages with containerized backend services on Railway gives us high reliability, zero hosting costs, and fast global delivery.
