@@ -17,7 +17,7 @@ if (process.env.DATABASE_URL) {
     ssl: { rejectUnauthorized: false },
   });
 
-  // Auto-initialize comments table if needed
+  // Auto-initialize comments and likes tables if needed
   dbPool
     .query(
       `CREATE TABLE IF NOT EXISTS comments (
@@ -27,9 +27,13 @@ if (process.env.DATABASE_URL) {
         author_email VARCHAR(255) NOT NULL,
         content TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS likes (
+        article_id VARCHAR(255) PRIMARY KEY,
+        likes_count INT DEFAULT 0
       );`
     )
-    .then(() => console.log('✅ PostgreSQL connected and comments table ready.'))
+    .then(() => console.log('✅ PostgreSQL connected: comments & likes tables ready.'))
     .catch((err) => console.warn('⚠️ PostgreSQL initialization notice:', err.message));
 } else {
   dbPool = {

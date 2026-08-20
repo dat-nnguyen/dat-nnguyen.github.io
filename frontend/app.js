@@ -298,15 +298,26 @@ async function loadComments(slug) {
         const email = c.author_email || c.authorEmail || '';
         const name = c.author_name || c.authorName || 'Anonymous';
         const avatarUrl = getAvatarUrl(email, name);
+        const commentId = c.id;
 
         return `
-          <div class="comment-card">
+          <div class="comment-card" id="comment-${commentId}">
             <div class="comment-header">
               <div class="comment-author-box">
                 <img src="${avatarUrl}" alt="${escapeHtml(name)}" class="comment-avatar" onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=64b5f6&color=121212&bold=true';" />
                 <span class="comment-author">${escapeHtml(name)}</span>
               </div>
-              <span class="comment-date">${formatDate(c.created_at || c.createdAt)}</span>
+              <div class="comment-header-right">
+                <span class="comment-date">${formatDate(c.created_at || c.createdAt)}</span>
+                <button class="comment-delete-btn" title="Delete comment" onclick="window.deleteComment('${commentId}', '${slug}')" aria-label="Delete comment">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                  </svg>
+                </button>
+              </div>
             </div>
             <div class="comment-body">${escapeHtml(c.content)}</div>
           </div>
@@ -318,6 +329,39 @@ async function loadComments(slug) {
     container.innerHTML = `<p class="loading-text" style="color: #ff6b6b;">Could not load comments.</p>`;
   }
 }
+
+async function deleteComment(commentId, slug) {
+  if (!confirm('Are you sure you want to delete this comment?')) return;
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/comments/${commentId}`, {
+      method: 'DELETE',
+    });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || 'Failed to delete comment');
+    }
+
+    const commentEl = document.getElementById(`comment-${commentId}`);
+    if (commentEl) {
+      commentEl.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+      commentEl.style.opacity = '0';
+      commentEl.style.transform = 'scale(0.95)';
+      setTimeout(() => {
+        loadComments(slug);
+      }, 250);
+    } else {
+      loadComments(slug);
+    }
+  } catch (err) {
+    console.error('Failed to delete comment:', err);
+    alert(`Could not delete comment: ${err.message}`);
+  }
+}
+
+window.deleteComment = deleteComment;
+
 
 function getAvatarUrl(email, name) {
   const cleanEmail = (email || '').trim().toLowerCase();

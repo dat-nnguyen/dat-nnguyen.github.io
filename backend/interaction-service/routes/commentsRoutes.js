@@ -1,15 +1,47 @@
 const express = require('express');
 const router = express.Router();
 
-// Pure in-memory storage (ephemeral — resets on each deploy/restart)
+// Pure in-memory storage (ephemeral — fallback when PostgreSQL is not connected)
 let inMemoryComments = [];
 let inMemoryLikes = {};
 
 module.exports = (pool) => {
+  // GET storage status (to help verify whether data is saved in PostgreSQL or In-Memory)
+  router.get('/storage/status', async (req, res) => {
+    let pgConnected = false;
+    let commentCount = 0;
+    try {
+      const result = await pool.query('SELECT COUNT(*) as count FROM comments;');
+      commentCount = parseInt(result.rows[0].count, 10);
+      pgConnected = true;
+    } catch (err) {
+      pgConnected = false;
+      commentCount = inMemoryComments.length;
+    }
+
+    res.json({
+      storage: pgConnected ? 'PostgreSQL (Persistent)' : 'In-Memory (Ephemeral)',
+      isDatabaseConnected: pgConnected,
+      totalComments: commentCount,
+      timestamp: new Date().toISOString(),
+    });
+  });
+
   // GET likes for article
   router.get('/like/:articleId', async (req, res) => {
+    const { articleId } = req.params;
     try {
-      const { articleId } = req.params;
+      // Try PostgreSQL first
+      try {
+        const result = await pool.query('SELECT likes_count FROM likes WHERE article_id = $1;', [articleId]);
+        if (result.rows && result.rows.length > 0) {
+          return res.json({ articleId, likes: result.rows[0].likes_count });
+        }
+        return res.json({ articleId, likes: 0 });
+      } catch (dbErr) {
+        // Fallback to in-memory
+      }
+
       const count = inMemoryLikes[articleId] || 0;
       res.json({ articleId, likes: count });
     } catch (err) {
@@ -20,11 +52,38 @@ module.exports = (pool) => {
 
   // POST increment or decrement like for article
   router.post('/like/:articleId', async (req, res) => {
-    try {
-      const { articleId } = req.params;
-      const { action } = req.body || {};
-      const current = inMemoryLikes[articleId] || 0;
+    const { articleId } = req.params;
+    const { action } = req.body || {};
 
+    try {
+      // Try PostgreSQL first
+      try {
+        if (action === 'unlike') {
+          const result = await pool.query(
+            `INSERT INTO likes (article_id, likes_count)
+             VALUES ($1, 0)
+             ON CONFLICT (article_id)
+             DO UPDATE SET likes_count = GREATEST(0, likes.likes_count - 1)
+             RETURNING likes_count;`,
+            [articleId]
+          );
+          return res.json({ articleId, likes: result.rows[0].likes_count });
+        } else {
+          const result = await pool.query(
+            `INSERT INTO likes (article_id, likes_count)
+             VALUES ($1, 1)
+             ON CONFLICT (article_id)
+             DO UPDATE SET likes_count = likes.likes_count + 1
+             RETURNING likes_count;`,
+            [articleId]
+          );
+          return res.json({ articleId, likes: result.rows[0].likes_count });
+        }
+      } catch (dbErr) {
+        // Fallback to in-memory
+      }
+
+      const current = inMemoryLikes[articleId] || 0;
       if (action === 'unlike') {
         inMemoryLikes[articleId] = Math.max(0, current - 1);
       } else {
@@ -109,6 +168,46 @@ module.exports = (pool) => {
     } catch (err) {
       console.error('GET /:articleId comments error:', err);
       res.status(500).json({ error: 'Failed to fetch comments' });
+    }
+  });
+
+  // DELETE comment by ID
+  router.delete('/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      // Try PostgreSQL first
+      try {
+        const deleteQuery = `
+          DELETE FROM comments 
+          WHERE id = $1
+          RETURNING *;
+        `;
+        const result = await pool.query(deleteQuery, [id]);
+        if (result.rows && result.rows.length > 0) {
+          return res.status(200).json({
+            message: 'Comment deleted successfully',
+            deletedComment: result.rows[0],
+          });
+        }
+      } catch (dbErr) {
+        console.warn('PostgreSQL unavailable for delete, checking in-memory:', dbErr.message);
+      }
+
+      // In-memory fallback
+      const initialLength = inMemoryComments.length;
+      inMemoryComments = inMemoryComments.filter((c) => String(c.id) !== String(id));
+      if (inMemoryComments.length < initialLength) {
+        return res.status(200).json({
+          message: 'Comment deleted successfully (in-memory)',
+          id,
+        });
+      }
+
+      return res.status(404).json({ error: 'Comment not found' });
+    } catch (err) {
+      console.error('DELETE /:id comment error:', err);
+      res.status(500).json({ error: 'Failed to delete comment' });
     }
   });
 

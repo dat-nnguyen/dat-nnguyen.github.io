@@ -556,10 +556,40 @@ a:hover {
 }
 
 
+.comment-header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .comment-date {
     color: var(--text-secondary);
     font-size: 0.85rem;
     font-family: var(--font-mono);
+}
+
+.comment-delete-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 3px 6px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+
+.comment-delete-btn:hover {
+    color: #ff6b6b;
+    background-color: rgba(255, 107, 107, 0.12);
+    border-color: rgba(255, 107, 107, 0.3);
+    transform: scale(1.08);
+}
+
+.comment-delete-btn:active {
+    transform: scale(0.95);
 }
 
 .comment-body {
