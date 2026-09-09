@@ -174,8 +174,8 @@ async function openPost(slug) {
           <button id="like-btn" class="like-btn">
             ❤️ Like <span id="like-count">0</span>
           </button>
-          <button id="share-btn" class="share-btn">
-            🔗 Share
+          <button id="share-btn" class="share-btn" title="Copy post link">
+            🔗 Copy Link
           </button>
         </div>
       </article>
@@ -298,16 +298,14 @@ function attachCopyButtons() {
     btn.innerText = 'Copy';
     btn.addEventListener('click', async () => {
       const code = block.querySelector('code')?.innerText || block.innerText;
-      try {
-        await navigator.clipboard.writeText(code);
+      const success = await copyToClipboard(code);
+      if (success) {
         btn.innerText = 'Copied!';
         btn.classList.add('copied');
         setTimeout(() => {
           btn.innerText = 'Copy';
           btn.classList.remove('copied');
         }, 2000);
-      } catch (err) {
-        console.error('Failed to copy code:', err);
       }
     });
     block.appendChild(btn);
@@ -789,15 +787,71 @@ function applySearchFilter() {
   });
 }
 
+// Universal Clipboard Copy helper with fallback
+async function copyToClipboard(text) {
+  // Method 1: Modern Clipboard API
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (err) {
+      console.warn('navigator.clipboard failed, attempting fallback...', err);
+    }
+  }
+
+  // Method 2: Fallback textarea + execCommand
+  try {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.top = '0';
+    textArea.style.left = '0';
+    textArea.style.width = '2em';
+    textArea.style.height = '2em';
+    textArea.style.padding = '0';
+    textArea.style.border = 'none';
+    textArea.style.outline = 'none';
+    textArea.style.boxShadow = 'none';
+    textArea.style.background = 'transparent';
+    textArea.setAttribute('readonly', '');
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    textArea.setSelectionRange(0, 99999);
+
+    const successful = document.execCommand('copy');
+    document.body.removeChild(textArea);
+    if (successful) return true;
+  } catch (err) {
+    console.error('execCommand copy error:', err);
+  }
+
+  return false;
+}
+
 // SHARE ARTICLE & TOAST SYSTEM
 async function handleShareClick(slug) {
-  const url = window.location.href;
-  try {
-    await navigator.clipboard.writeText(url);
+  const shareBtn = document.getElementById('share-btn');
+  const cleanOrigin = window.location.origin;
+  const cleanPath = window.location.pathname.replace(/\/+$/, '');
+  const url = `${cleanOrigin}${cleanPath}/#post/${slug}`;
+
+  const success = await copyToClipboard(url);
+
+  if (success) {
     showToast('Link copied to clipboard! 📋');
-  } catch (err) {
-    console.error('Failed to copy link:', err);
-    showToast('Failed to copy link.');
+    if (shareBtn) {
+      const originalHtml = shareBtn.innerHTML;
+      shareBtn.innerHTML = '✅ Copied!';
+      shareBtn.classList.add('copied');
+      setTimeout(() => {
+        shareBtn.innerHTML = originalHtml;
+        shareBtn.classList.remove('copied');
+      }, 2500);
+    }
+  } else {
+    prompt('Copy this post link:', url);
+    showToast('Link opened in prompt');
   }
 }
 
