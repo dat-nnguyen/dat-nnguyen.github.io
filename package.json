@@ -4,8 +4,9 @@
   "version": "0.0.0",
   "scripts": {
     "start": "node api-gateway/server.js",
+    "predev": "node scripts/generate-static-content.js",
     "dev": "vite frontend",
-    "build": "cd frontend && npx vite build --outDir ../dist --emptyOutDir",
+    "build": "node scripts/generate-static-content.js && cd frontend && npx vite build --outDir ../dist --emptyOutDir",
     "preview": "vite preview frontend"
   },
   "dependencies": {

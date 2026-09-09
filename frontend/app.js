@@ -86,15 +86,31 @@ async function fetchAboutContent() {
   if (isAboutFetched) return;
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/about`);
+    let content = null;
 
-
-    if (!response.ok) {
-      throw new Error(`Server returned status: ${response.status}`);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/about`);
+      if (response.ok) {
+        const data = await response.json();
+        content = data.content;
+      }
+    } catch (apiErr) {
+      console.warn('API bio fetch notice, checking static fallback:', apiErr.message);
     }
 
-    const data = await response.json();
-    aboutContainer.innerHTML = `<div class="markdown-body">${data.content}</div>`;
+    if (!content) {
+      const staticRes = await fetch('./data/about.json');
+      if (staticRes.ok) {
+        const staticData = await staticRes.json();
+        content = staticData.content;
+      }
+    }
+
+    if (!content) {
+      throw new Error('Bio content unavailable');
+    }
+
+    aboutContainer.innerHTML = `<div class="markdown-body">${content}</div>`;
     isAboutFetched = true;
   } catch (error) {
     console.error("Failed to fetch bio:", error);
@@ -113,11 +129,32 @@ async function openPost(slug) {
   postDetailContainer.innerHTML = `<p class="loading-text">Loading article...</p>`;
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/posts/${slug}`);
+    let post = null;
 
-    if (!response.ok) throw new Error('Post not found');
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/posts/${slug}`);
+      if (response.ok) {
+        post = await response.json();
+      }
+    } catch (apiErr) {
+      console.warn('API post fetch notice, checking static fallback:', apiErr.message);
+    }
 
-    const post = await response.json();
+    // Fallback to static data if API didn't return the post
+    if (!post) {
+      try {
+        const staticRes = await fetch('./data/posts.json');
+        if (staticRes.ok) {
+          const staticPosts = await staticRes.json();
+          post = staticPosts.find((p) => p.slug === slug);
+        }
+      } catch (staticErr) {
+        console.warn('Static post fallback notice:', staticErr.message);
+      }
+    }
+
+    if (!post) throw new Error('Post not found');
+
     postDetailContainer.innerHTML = `
       <article class="post-detail">
         <header class="post-header">
@@ -622,82 +659,118 @@ async function fetchAndRenderPosts(category, containerId, limit = null) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
+  let posts = [];
+
+  // Try API Gateway
   try {
     const url = limit
       ? `${API_BASE_URL}/api/posts?category=${category}&limit=${limit}`
       : `${API_BASE_URL}/api/posts?category=${category}`;
 
     const response = await fetch(url);
-    if (!response.ok) throw new Error('Gateway error');
-
-    const posts = await response.json();
-
-    if (posts.length === 0) {
-      container.innerHTML = `<p class="loading-text">No ${category} posts yet.</p>`;
-      return;
+    if (response.ok) {
+      posts = await response.json();
     }
-
-    container.innerHTML = posts
-      .map(
-        (post) => `
-            <div class="list-item">
-                <span class="date">${formatDate(post.createdAt)} &bull; ${post.readingTime || ''}</span>
-                <span class="title">
-                    <a href="#post/${post.slug}" class="post-link" data-slug="${post.slug}">${post.title}</a>
-                </span>
-            </div>
-        `,
-      )
-      .join('');
-
-    applySearchFilter();
   } catch (error) {
-    console.error(`Failed to load ${category}:`, error);
-    container.innerHTML = `<p class="loading-text" style="color: #ff6b6b;">Failed to load posts.</p>`;
+    console.warn(`API Gateway fetch failed for ${category}, checking static fallback:`, error.message);
   }
+
+  // Merge or fallback to static bundled posts
+  try {
+    const staticRes = await fetch('./data/posts.json');
+    if (staticRes.ok) {
+      const staticPosts = await staticRes.json();
+      const existingSlugs = new Set(posts.map((p) => p.slug));
+      for (const sp of staticPosts) {
+        if (!existingSlugs.has(sp.slug)) {
+          if (!category || sp.category.toLowerCase() === category.toLowerCase()) {
+            posts.push(sp);
+          }
+        }
+      }
+      posts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      if (limit && posts.length > limit) {
+        posts = posts.slice(0, limit);
+      }
+    }
+  } catch (staticErr) {
+    console.warn('Static posts fallback notice:', staticErr.message);
+  }
+
+  if (posts.length === 0) {
+    container.innerHTML = `<p class="loading-text">No ${category} posts yet.</p>`;
+    return;
+  }
+
+  container.innerHTML = posts
+    .map(
+      (post) => `
+          <div class="list-item">
+              <span class="date">${formatDate(post.createdAt)} &bull; ${post.readingTime || ''}</span>
+              <span class="title">
+                  <a href="#post/${post.slug}" class="post-link" data-slug="${post.slug}">${post.title}</a>
+              </span>
+          </div>
+      `,
+    )
+    .join('');
+
+  applySearchFilter();
 }
 
-// Fetch projects dynamically from /api/projects
+// Fetch projects dynamically from /api/projects with static fallback
 async function fetchAndRenderProjects(containerId, limit = null) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
+  let projects = [];
+
   try {
     const url = limit ? `${API_BASE_URL}/api/projects?limit=${limit}` : `${API_BASE_URL}/api/projects`;
     const response = await fetch(url);
-
-    if (!response.ok) throw new Error('Gateway error');
-
-    const projects = await response.json();
-
-    if (projects.length === 0) {
-      container.innerHTML = `<p class="loading-text">No projects yet.</p>`;
-      return;
+    if (response.ok) {
+      projects = await response.json();
     }
-
-    container.innerHTML = projects
-      .map(
-        (project) => `
-          <div class="card">
-              <h3><a href="${project.link || '#'}" target="_blank" rel="noopener noreferrer">${project.title}</a></h3>
-              <p>${project.description}</p>
-              ${
-                project.tags && project.tags.length > 0
-                  ? `<div class="project-tags">
-                      ${project.tags.map((t) => `<span class="project-tag">${t}</span>`).join('')}
-                     </div>`
-                  : ''
-              }
-          </div>
-        `,
-      )
-      .join('');
-
-    applySearchFilter();
   } catch (error) {
-    console.error('Failed to load projects:', error);
-    container.innerHTML = `<p class="loading-text" style="color: #ff6b6b;">Failed to load projects.</p>`;
+    console.warn('API projects error, checking static fallback:', error.message);
   }
+
+  if (projects.length === 0) {
+    try {
+      const staticRes = await fetch('./data/projects.json');
+      if (staticRes.ok) {
+        projects = await staticRes.json();
+        if (limit) projects = projects.slice(0, limit);
+      }
+    } catch (staticErr) {
+      console.warn('Static projects fallback notice:', staticErr.message);
+    }
+  }
+
+  if (projects.length === 0) {
+    container.innerHTML = `<p class="loading-text">No projects yet.</p>`;
+    return;
+  }
+
+  container.innerHTML = projects
+    .map(
+      (project) => `
+        <div class="card">
+            <h3><a href="${project.link || '#'}" target="_blank" rel="noopener noreferrer">${project.title}</a></h3>
+            <p>${project.description}</p>
+            ${
+              project.tags && project.tags.length > 0
+                ? `<div class="project-tags">
+                    ${project.tags.map((t) => `<span class="project-tag">${t}</span>`).join('')}
+                   </div>`
+                : ''
+            }
+        </div>
+      `,
+    )
+    .join('');
+
+  applySearchFilter();
 }
 
 function applySearchFilter() {
