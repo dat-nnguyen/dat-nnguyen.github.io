@@ -783,6 +783,419 @@ async function fetchAndRenderProjects(containerId, limit = null) {
   applySearchFilter();
 }
 
+// ==========================================
+// FULL-TEXT SEARCH SYSTEM
+// ==========================================
+let searchIndex = {
+  posts: null,
+  projects: null,
+  loadingPromise: null,
+};
+
+async function loadSearchIndex() {
+  if (searchIndex.posts && searchIndex.projects) {
+    return searchIndex;
+  }
+  if (searchIndex.loadingPromise) {
+    return searchIndex.loadingPromise;
+  }
+
+  searchIndex.loadingPromise = (async () => {
+    try {
+      const [postsRes, projectsRes] = await Promise.allSettled([
+        fetch('./data/posts.json', { cache: 'no-cache' }),
+        fetch('./data/projects.json', { cache: 'no-cache' }),
+      ]);
+
+      if (postsRes.status === 'fulfilled' && postsRes.value.ok) {
+        searchIndex.posts = await postsRes.value.json();
+      } else {
+        searchIndex.posts = [];
+      }
+
+      if (projectsRes.status === 'fulfilled' && projectsRes.value.ok) {
+        searchIndex.projects = await projectsRes.value.json();
+      } else {
+        searchIndex.projects = [];
+      }
+    } catch (err) {
+      console.warn('Search index load notice:', err.message);
+      searchIndex.posts = searchIndex.posts || [];
+      searchIndex.projects = searchIndex.projects || [];
+    }
+    return searchIndex;
+  })();
+
+  return searchIndex.loadingPromise;
+}
+
+function stripHtml(html) {
+  if (!html) return '';
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || '';
+}
+
+function highlightMatches(text, query) {
+  if (!query || !text) return escapeHtml(text || '');
+  const terms = query
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  if (terms.length === 0) return escapeHtml(text);
+  const regex = new RegExp(`(${terms.join('|')})`, 'gi');
+  return escapeHtml(text).replace(regex, '<mark class="search-highlight">$1</mark>');
+}
+
+function extractSnippet(fullText, query, maxLen = 130) {
+  if (!fullText) return '';
+  const plain = fullText.replace(/\s+/g, ' ').trim();
+  const lower = plain.toLowerCase();
+  const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+  let matchIndex = -1;
+  for (const term of terms) {
+    const idx = lower.indexOf(term);
+    if (idx !== -1 && (matchIndex === -1 || idx < matchIndex)) {
+      matchIndex = idx;
+    }
+  }
+
+  if (matchIndex === -1) {
+    return plain.length > maxLen ? plain.slice(0, maxLen) + '...' : plain;
+  }
+
+  const start = Math.max(0, matchIndex - 35);
+  const end = Math.min(plain.length, matchIndex + maxLen - 35);
+  let snippet = plain.slice(start, end);
+  if (start > 0) snippet = '...' + snippet;
+  if (end < plain.length) snippet = snippet + '...';
+  return snippet;
+}
+
+function closeSearchDropdown() {
+  const dropdown = document.getElementById('search-results-dropdown');
+  if (dropdown) dropdown.classList.add('hidden');
+}
+
+function clearSearch() {
+  const searchInput = document.getElementById('site-search-input');
+  const clearBtn = document.getElementById('search-clear-btn');
+  if (searchInput) {
+    searchInput.value = '';
+    searchInput.focus();
+  }
+  if (clearBtn) clearBtn.classList.add('hidden');
+  closeSearchDropdown();
+  applySearchFilter();
+}
+
+async function executeSearch(query) {
+  const dropdown = document.getElementById('search-results-dropdown');
+  const clearBtn = document.getElementById('search-clear-btn');
+  if (!dropdown) return;
+
+  const trimmed = query.trim();
+  if (clearBtn) {
+    if (trimmed.length > 0) {
+      clearBtn.classList.remove('hidden');
+    } else {
+      clearBtn.classList.add('hidden');
+    }
+  }
+
+  // Also apply in-page filter
+  applySearchFilter();
+
+  if (!trimmed) {
+    dropdown.classList.add('hidden');
+    dropdown.innerHTML = '';
+    return;
+  }
+
+  const { posts, projects } = await loadSearchIndex();
+  const terms = trimmed.toLowerCase().split(/\s+/).filter(Boolean);
+
+  // Match posts
+  const matchedPosts = [];
+  for (const post of posts || []) {
+    const titleLower = (post.title || '').toLowerCase();
+    const slugLower = (post.slug || '').toLowerCase();
+    const categoryLower = (post.category || '').toLowerCase();
+    const plainContent = stripHtml(post.content || '');
+    const contentLower = plainContent.toLowerCase();
+
+    let score = 0;
+    let hasMatch = false;
+
+    for (const term of terms) {
+      if (titleLower.includes(term)) {
+        score += 10;
+        hasMatch = true;
+      }
+      if (categoryLower.includes(term)) {
+        score += 5;
+        hasMatch = true;
+      }
+      if (slugLower.includes(term)) {
+        score += 4;
+        hasMatch = true;
+      }
+      if (contentLower.includes(term)) {
+        score += 2;
+        hasMatch = true;
+      }
+    }
+
+    if (hasMatch) {
+      matchedPosts.push({
+        ...post,
+        score,
+        snippet: extractSnippet(plainContent, trimmed),
+      });
+    }
+  }
+  matchedPosts.sort((a, b) => b.score - a.score);
+
+  // Match projects
+  const matchedProjects = [];
+  for (const project of projects || []) {
+    const titleLower = (project.title || '').toLowerCase();
+    const descLower = (project.description || '').toLowerCase();
+    const tagsLower = (project.tags || []).join(' ').toLowerCase();
+
+    let score = 0;
+    let hasMatch = false;
+
+    for (const term of terms) {
+      if (titleLower.includes(term)) {
+        score += 10;
+        hasMatch = true;
+      }
+      if (tagsLower.includes(term)) {
+        score += 6;
+        hasMatch = true;
+      }
+      if (descLower.includes(term)) {
+        score += 3;
+        hasMatch = true;
+      }
+    }
+
+    if (hasMatch) {
+      matchedProjects.push({
+        ...project,
+        score,
+        snippet: extractSnippet(project.description || '', trimmed),
+      });
+    }
+  }
+  matchedProjects.sort((a, b) => b.score - a.score);
+
+  const totalResults = matchedPosts.length + matchedProjects.length;
+
+  if (totalResults === 0) {
+    dropdown.innerHTML = `
+      <div class="search-empty-state">
+        <p>No results found for <strong>"${escapeHtml(trimmed)}"</strong></p>
+        <p class="search-empty-hint">Try searching by topic, e.g., <em>Operating System, Redis, Microservices, AI, Docker</em></p>
+      </div>
+    `;
+    dropdown.classList.remove('hidden');
+    return;
+  }
+
+  let html = '';
+
+  if (matchedPosts.length > 0) {
+    html += `
+      <div class="search-group">
+        <div class="search-group-title">
+          <span>📝 Articles & Blogs (${matchedPosts.length})</span>
+        </div>
+        ${matchedPosts
+          .map(
+            (p) => `
+          <div class="search-result-item" role="option" data-type="post" data-slug="${p.slug}" tabindex="0">
+            <div class="search-item-header">
+              <span class="search-item-title">${highlightMatches(p.title, trimmed)}</span>
+              <span class="search-item-badge ${p.category === 'life' ? 'badge-life' : 'badge-technical'}">${p.category || 'Article'}</span>
+            </div>
+            <p class="search-item-snippet">${highlightMatches(p.snippet, trimmed)}</p>
+          </div>
+        `
+          )
+          .join('')}
+      </div>
+    `;
+  }
+
+  if (matchedProjects.length > 0) {
+    html += `
+      <div class="search-group">
+        <div class="search-group-title">
+          <span>🚀 Projects (${matchedProjects.length})</span>
+        </div>
+        ${matchedProjects
+          .map(
+            (p) => `
+          <div class="search-result-item" role="option" data-type="project" data-url="${p.link || '#'}" tabindex="0">
+            <div class="search-item-header">
+              <span class="search-item-title">${highlightMatches(p.title, trimmed)}</span>
+              <span class="search-item-badge badge-project">Project ↗</span>
+            </div>
+            <p class="search-item-snippet">${highlightMatches(p.snippet, trimmed)}</p>
+            ${
+              p.tags && p.tags.length > 0
+                ? `<div class="search-item-tags">
+                    ${p.tags.slice(0, 4).map((t) => `<span class="search-mini-tag">${highlightMatches(t, trimmed)}</span>`).join('')}
+                   </div>`
+                : ''
+            }
+          </div>
+        `
+          )
+          .join('')}
+      </div>
+    `;
+  }
+
+  html += `
+    <div class="search-dropdown-footer">
+      <span>Found ${totalResults} result${totalResults === 1 ? '' : 's'}</span>
+      <span class="search-shortcuts-hint">
+        <kbd>↑↓</kbd> navigate <kbd>↵</kbd> select <kbd>esc</kbd> close
+      </span>
+    </div>
+  `;
+
+  dropdown.innerHTML = html;
+  dropdown.classList.remove('hidden');
+
+  // Attach click listeners to result items
+  dropdown.querySelectorAll('.search-result-item').forEach((item) => {
+    item.addEventListener('click', () => {
+      const type = item.getAttribute('data-type');
+      if (type === 'post') {
+        const slug = item.getAttribute('data-slug');
+        window.location.hash = `#post/${slug}`;
+      } else if (type === 'project') {
+        const url = item.getAttribute('data-url');
+        if (url && url !== '#') {
+          window.open(url, '_blank', 'noopener,noreferrer');
+        }
+      }
+      closeSearchDropdown();
+    });
+  });
+}
+
+function setupSearchListener() {
+  const searchInput = document.getElementById('site-search-input');
+  const clearBtn = document.getElementById('search-clear-btn');
+  const dropdown = document.getElementById('search-results-dropdown');
+  const wrapper = document.querySelector('.search-input-wrapper');
+
+  if (!searchInput) return;
+
+  // Preload search index in background
+  loadSearchIndex();
+
+  // Input typing with debounce
+  let debounceTimer;
+  searchInput.addEventListener('input', (e) => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      executeSearch(e.target.value);
+    }, 100);
+  });
+
+  // Re-open dropdown on focus if input has text
+  searchInput.addEventListener('focus', () => {
+    if (searchInput.value.trim().length > 0) {
+      executeSearch(searchInput.value);
+    }
+  });
+
+  // Keyboard navigation inside dropdown
+  let selectedIndex = -1;
+  searchInput.addEventListener('keydown', (e) => {
+    if (!dropdown || dropdown.classList.contains('hidden')) {
+      if (e.key === 'Escape') {
+        clearSearch();
+        searchInput.blur();
+      }
+      return;
+    }
+
+    const items = dropdown.querySelectorAll('.search-result-item');
+    if (items.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      selectedIndex = (selectedIndex + 1) % items.length;
+      updateSelectedItem(items, selectedIndex);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      selectedIndex = (selectedIndex - 1 + items.length) % items.length;
+      updateSelectedItem(items, selectedIndex);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (selectedIndex >= 0 && selectedIndex < items.length) {
+        items[selectedIndex].click();
+      } else if (items.length > 0) {
+        items[0].click();
+      }
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      closeSearchDropdown();
+      searchInput.blur();
+    }
+  });
+
+  function updateSelectedItem(items, idx) {
+    items.forEach((it, i) => {
+      if (i === idx) {
+        it.classList.add('search-item-selected');
+        it.scrollIntoView({ block: 'nearest' });
+      } else {
+        it.classList.remove('search-item-selected');
+      }
+    });
+  }
+
+  // Clear button click
+  if (clearBtn) {
+    clearBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      clearSearch();
+    });
+  }
+
+  // Click outside to close dropdown
+  document.addEventListener('click', (e) => {
+    if (wrapper && !wrapper.contains(e.target)) {
+      closeSearchDropdown();
+    }
+  });
+
+  // Global Keyboard Shortcuts (Cmd+K, Ctrl+K, or /)
+  document.addEventListener('keydown', (e) => {
+    const isEditing =
+      ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName) ||
+      document.activeElement?.isContentEditable;
+
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      searchInput.focus();
+      searchInput.select();
+    } else if (e.key === '/' && !isEditing) {
+      e.preventDefault();
+      searchInput.focus();
+      searchInput.select();
+    }
+  });
+}
+
 function applySearchFilter() {
   const searchInput = document.getElementById('site-search-input');
   if (!searchInput) return;
