@@ -19,30 +19,60 @@ qrModal.addEventListener('click', (e) => {
 
 
 
-const sunIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>`;
-const moonIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>`;
-const savedTheme = localStorage.getItem('theme');
+const sunIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>`;
+const moonIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>`;
+
 const themeBtn = document.getElementById('theme-toggle');
-if (savedTheme === 'light') {
-  document.body.classList.add('light-theme');
-  themeBtn.innerHTML = moonIcon;
-} else {
-  document.body.classList.remove('light-theme');
-  themeBtn.innerHTML = sunIcon;
-}
 
-themeBtn.addEventListener('click', () => {
-  // Toggle the class on the body
-  document.body.classList.toggle('light-theme');
-
-  if (document.body.classList.contains('light-theme')) {
-    themeBtn.innerHTML = moonIcon;
+function applyTheme(theme) {
+  if (theme === 'light') {
+    document.documentElement.classList.add('light-theme');
+    document.body.classList.add('light-theme');
+    if (themeBtn) {
+      themeBtn.innerHTML = moonIcon;
+      themeBtn.setAttribute('title', 'Switch to dark mode');
+      themeBtn.setAttribute('aria-label', 'Switch to dark mode');
+    }
     localStorage.setItem('theme', 'light');
   } else {
-    themeBtn.innerHTML = sunIcon;
+    document.documentElement.classList.remove('light-theme');
+    document.body.classList.remove('light-theme');
+    if (themeBtn) {
+      themeBtn.innerHTML = sunIcon;
+      themeBtn.setAttribute('title', 'Switch to light mode');
+      themeBtn.setAttribute('aria-label', 'Switch to light mode');
+    }
     localStorage.setItem('theme', 'dark');
   }
-});
+}
+
+// Initialize theme state on load
+const currentSavedTheme = localStorage.getItem('theme') || 'dark';
+applyTheme(currentSavedTheme);
+
+if (themeBtn) {
+  themeBtn.addEventListener('click', () => {
+    const isCurrentlyLight = document.documentElement.classList.contains('light-theme');
+    const targetTheme = isCurrentlyLight ? 'dark' : 'light';
+
+    themeBtn.classList.add('theme-toggle-spin');
+    setTimeout(() => themeBtn.classList.remove('theme-toggle-spin'), 350);
+
+    // If browser supports View Transitions API, execute a seamless cross-fade of the whole screen
+    if (document.startViewTransition) {
+      document.startViewTransition(() => {
+        applyTheme(targetTheme);
+      });
+    } else {
+      // Fallback: smooth transition class across all layout elements
+      document.documentElement.classList.add('theme-transitioning');
+      applyTheme(targetTheme);
+      setTimeout(() => {
+        document.documentElement.classList.remove('theme-transitioning');
+      }, 400);
+    }
+  });
+}
 
 const navAbout = document.getElementById('nav-about');
 const navHome = document.getElementById('nav-home');
