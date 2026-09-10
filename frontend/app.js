@@ -88,21 +88,27 @@ async function fetchAboutContent() {
   try {
     let content = null;
 
+    // 1. Primary: load static bundled about data
     try {
-      const response = await fetch(`${API_BASE_URL}/api/about`);
-      if (response.ok) {
-        const data = await response.json();
-        content = data.content;
-      }
-    } catch (apiErr) {
-      console.warn('API bio fetch notice, checking static fallback:', apiErr.message);
-    }
-
-    if (!content) {
-      const staticRes = await fetch('./data/about.json');
+      const staticRes = await fetch('./data/about.json', { cache: 'no-cache' });
       if (staticRes.ok) {
         const staticData = await staticRes.json();
         content = staticData.content;
+      }
+    } catch (staticErr) {
+      console.warn('Static bio fetch notice, checking API Gateway fallback:', staticErr.message);
+    }
+
+    // 2. Fallback: API Gateway
+    if (!content && API_BASE_URL) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/about`);
+        if (response.ok) {
+          const data = await response.json();
+          content = data.content;
+        }
+      } catch (apiErr) {
+        console.warn('API bio fetch error:', apiErr.message);
       }
     }
 
@@ -131,25 +137,26 @@ async function openPost(slug) {
   try {
     let post = null;
 
+    // 1. Primary: load from static compiled bundle (fastest and always up-to-date with Git)
     try {
-      const response = await fetch(`${API_BASE_URL}/api/posts/${slug}`);
-      if (response.ok) {
-        post = await response.json();
+      const staticRes = await fetch('./data/posts.json', { cache: 'no-cache' });
+      if (staticRes.ok) {
+        const staticPosts = await staticRes.json();
+        post = staticPosts.find((p) => p.slug === slug);
       }
-    } catch (apiErr) {
-      console.warn('API post fetch notice, checking static fallback:', apiErr.message);
+    } catch (staticErr) {
+      console.warn('Static post fetch notice, checking API Gateway fallback:', staticErr.message);
     }
 
-    // Fallback to static data if API didn't return the post
-    if (!post) {
+    // 2. Fallback to API Gateway if not found in static bundle
+    if (!post && API_BASE_URL) {
       try {
-        const staticRes = await fetch('./data/posts.json');
-        if (staticRes.ok) {
-          const staticPosts = await staticRes.json();
-          post = staticPosts.find((p) => p.slug === slug);
+        const response = await fetch(`${API_BASE_URL}/api/posts/${slug}`);
+        if (response.ok) {
+          post = await response.json();
         }
-      } catch (staticErr) {
-        console.warn('Static post fallback notice:', staticErr.message);
+      } catch (apiErr) {
+        console.warn('API post fetch notice, checking static fallback:', apiErr.message);
       }
     }
 
@@ -659,44 +666,44 @@ async function fetchAndRenderPosts(category, containerId, limit = null) {
 
   let posts = [];
 
-  // Try API Gateway
+  // 1. Primary source of truth: static bundled posts compiled from Markdown at build time
   try {
-    const url = limit
-      ? `${API_BASE_URL}/api/posts?category=${category}&limit=${limit}`
-      : `${API_BASE_URL}/api/posts?category=${category}`;
-
-    const response = await fetch(url);
-    if (response.ok) {
-      posts = await response.json();
-    }
-  } catch (error) {
-    console.warn(`API Gateway fetch failed for ${category}, checking static fallback:`, error.message);
-  }
-
-  // Merge or fallback to static bundled posts
-  try {
-    const staticRes = await fetch('./data/posts.json');
+    const staticRes = await fetch('./data/posts.json', { cache: 'no-cache' });
     if (staticRes.ok) {
-      const staticPosts = await staticRes.json();
-      const existingSlugs = new Set(posts.map((p) => p.slug));
-      for (const sp of staticPosts) {
-        if (!existingSlugs.has(sp.slug)) {
-          if (!category || sp.category.toLowerCase() === category.toLowerCase()) {
-            posts.push(sp);
-          }
-        }
-      }
-      posts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      if (limit && posts.length > limit) {
-        posts = posts.slice(0, limit);
-      }
+      posts = await staticRes.json();
     }
   } catch (staticErr) {
-    console.warn('Static posts fallback notice:', staticErr.message);
+    console.warn('Static posts fetch notice, checking API Gateway fallback:', staticErr.message);
+  }
+
+  // 2. Fallback to API Gateway only if static bundle is unavailable
+  if (posts.length === 0 && API_BASE_URL) {
+    try {
+      const url = limit
+        ? `${API_BASE_URL}/api/posts?category=${category}&limit=${limit}`
+        : `${API_BASE_URL}/api/posts?category=${category}`;
+
+      const response = await fetch(url);
+      if (response.ok) {
+        posts = await response.json();
+      }
+    } catch (error) {
+      console.warn(`API Gateway fetch failed for ${category}:`, error.message);
+    }
+  }
+
+  if (category) {
+    posts = posts.filter((p) => p.category && p.category.toLowerCase() === category.toLowerCase());
+  }
+
+  posts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  if (limit && posts.length > limit) {
+    posts = posts.slice(0, limit);
   }
 
   if (posts.length === 0) {
-    container.innerHTML = `<p class="loading-text">No ${category} posts yet.</p>`;
+    container.innerHTML = `<p class="loading-text">No ${category || ''} posts yet.</p>`;
     return;
   }
 
@@ -723,26 +730,31 @@ async function fetchAndRenderProjects(containerId, limit = null) {
 
   let projects = [];
 
+  // 1. Primary: load static projects bundled with the site
   try {
-    const url = limit ? `${API_BASE_URL}/api/projects?limit=${limit}` : `${API_BASE_URL}/api/projects`;
-    const response = await fetch(url);
-    if (response.ok) {
-      projects = await response.json();
+    const staticRes = await fetch('./data/projects.json', { cache: 'no-cache' });
+    if (staticRes.ok) {
+      projects = await staticRes.json();
     }
-  } catch (error) {
-    console.warn('API projects error, checking static fallback:', error.message);
+  } catch (staticErr) {
+    console.warn('Static projects fetch notice, checking API Gateway:', staticErr.message);
   }
 
-  if (projects.length === 0) {
+  // 2. Fallback to API Gateway if static bundle is unavailable
+  if (projects.length === 0 && API_BASE_URL) {
     try {
-      const staticRes = await fetch('./data/projects.json');
-      if (staticRes.ok) {
-        projects = await staticRes.json();
-        if (limit) projects = projects.slice(0, limit);
+      const url = limit ? `${API_BASE_URL}/api/projects?limit=${limit}` : `${API_BASE_URL}/api/projects`;
+      const response = await fetch(url);
+      if (response.ok) {
+        projects = await response.json();
       }
-    } catch (staticErr) {
-      console.warn('Static projects fallback notice:', staticErr.message);
+    } catch (error) {
+      console.warn('API projects error:', error.message);
     }
+  }
+
+  if (limit && projects.length > limit) {
+    projects = projects.slice(0, limit);
   }
 
   if (projects.length === 0) {
