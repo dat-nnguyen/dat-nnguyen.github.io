@@ -950,7 +950,7 @@ function handleRouting() {
     showView(viewHome);
     fetchAndRenderPosts('life', 'latest-blogs-container', 5);
     fetchAndRenderPosts('technical', 'latest-articles-container', 5);
-    fetchAndRenderProjects('latest-projects-container', 6);
+    fetchAndRenderProjects('latest-projects-container', 4);
   }
 }
 

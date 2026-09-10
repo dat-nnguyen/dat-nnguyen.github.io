@@ -33,5 +33,33 @@
     "description": "Production-grade RESTful backend service built to log exercises and sets, track workout splits, and calculate progressive overload analytics.",
     "link": "https://github.com/dat-nnguyen/workout-tracker",
     "tags": ["Node.js", "REST API", "Docker", "JWT", "Analytics"]
+  },
+  {
+    "id": "6",
+    "title": "Chrome Dino AI",
+    "description": "An artificial intelligence / neuroevolution agent trained to play the Chrome Dinosaur game.",
+    "link": "https://github.com/dat-nnguyen/chrome-dino-ai",
+    "tags": ["AI", "Neuroevolution", "JavaScript"]
+  },
+  {
+    "id": "7",
+    "title": "Arkanoid Game",
+    "description": "A classic arcade brick-breaker game built with interactive paddle physics and power-ups.",
+    "link": "https://github.com/dat-nnguyen/ArkanoidGame",
+    "tags": ["Arcade", "Physics", "JavaScript"]
+  },
+  {
+    "id": "8",
+    "title": "Java Chess Engine",
+    "description": "A custom chess engine and AI evaluation algorithm written from scratch in Java.",
+    "link": "https://github.com/dat-nnguyen/java-chess-engine",
+    "tags": ["Java", "Chess", "Algorithms"]
+  },
+  {
+    "id": "9",
+    "title": "Spinning Donut",
+    "description": "A 3D ASCII spinning donut animation renderer calculating torus illumination and projection math.",
+    "link": "https://github.com/dat-nnguyen/SpinningDonut",
+    "tags": ["C", "3D Math", "ASCII"]
   }
 ]
