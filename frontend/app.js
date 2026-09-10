@@ -766,10 +766,7 @@ async function fetchAndRenderProjects(containerId, limit = null) {
     .map(
       (project) => `
         <div class="card project-card">
-            <div class="card-header">
-                <h3 class="project-card-title"><a href="${project.link || '#'}" target="_blank" rel="noopener noreferrer">${project.title}</a></h3>
-                <span class="card-arrow-icon" aria-hidden="true">↗</span>
-            </div>
+            <h3 class="project-card-title"><a href="${project.link || '#'}" target="_blank" rel="noopener noreferrer">${project.title}</a></h3>
             <p class="project-card-desc">${project.description}</p>
             ${
               project.tags && project.tags.length > 0
@@ -1013,7 +1010,7 @@ async function executeSearch(query) {
     html += `
       <div class="search-group">
         <div class="search-group-title">
-          <span>📝 Articles & Blogs (${matchedPosts.length})</span>
+          <span>Articles & Blogs (${matchedPosts.length})</span>
         </div>
         ${matchedPosts
           .map(
@@ -1036,7 +1033,7 @@ async function executeSearch(query) {
     html += `
       <div class="search-group">
         <div class="search-group-title">
-          <span>🚀 Projects (${matchedProjects.length})</span>
+          <span>Projects (${matchedProjects.length})</span>
         </div>
         ${matchedProjects
           .map(
@@ -1044,7 +1041,7 @@ async function executeSearch(query) {
           <div class="search-result-item" role="option" data-type="project" data-url="${p.link || '#'}" tabindex="0">
             <div class="search-item-header">
               <span class="search-item-title">${highlightMatches(p.title, trimmed)}</span>
-              <span class="search-item-badge badge-project">Project ↗</span>
+              <span class="search-item-badge badge-project">Project</span>
             </div>
             <p class="search-item-snippet">${highlightMatches(p.snippet, trimmed)}</p>
             ${
