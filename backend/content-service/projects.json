@@ -1,30 +1,37 @@
 [
   {
     "id": "1",
-    "title": "Chrome Dino AI",
-    "description": "An artificial intelligence / neuroevolution agent trained to play the Chrome Dinosaur game.",
-    "link": "https://github.com/dat-nnguyen/chrome-dino-ai",
-    "tags": ["AI", "Neuroevolution", "JavaScript"]
+    "title": "Hanoi Heart Hospital - AI Front Desk Platform",
+    "description": "An AI-native healthcare platform built for Vietnam AI Innovation Challenge 2026, featuring clinical triage workflows, agentic tool-calling, and RAG decision support.",
+    "link": "https://github.com/TranNhatThach/Hackathon-Innovation-VietNam-2026-",
+    "tags": ["AI Agents", "FastAPI", "Next.js", "RAG", "Healthcare"]
   },
   {
     "id": "2",
-    "title": "Arkanoid Game",
-    "description": "A classic arcade brick-breaker game built with interactive paddle physics and power-ups.",
-    "link": "https://github.com/dat-nnguyen/ArkanoidGame",
-    "tags": ["Arcade", "Physics", "JavaScript"]
+    "title": "E-Commerce Microservices Platform",
+    "description": "Distributed microservices backend featuring polyglot persistence (PostgreSQL, MongoDB, Redis), RabbitMQ Saga choreography, distributed idempotency, and OpenAPI 3.0.",
+    "link": "https://github.com/dat-nnguyen/ecommerce-api",
+    "tags": ["Microservices", "Node.js", "RabbitMQ", "PostgreSQL", "MongoDB", "Redis"]
   },
   {
     "id": "3",
-    "title": "Java Chess Engine",
-    "description": "A custom chess engine and AI evaluation algorithm written from scratch in Java.",
-    "link": "https://github.com/dat-nnguyen/java-chess-engine",
-    "tags": ["Java", "Chess", "Algorithms"]
+    "title": "High-Concurrency URL Shortening Service",
+    "description": "Horizontally scalable URL shortener powered by 64-bit Twitter Snowflake ID generation, Base62 encoding, Redis Cache-Aside with penetration defense, and Nginx load balancing.",
+    "link": "https://github.com/dat-nnguyen/url-shortening-service",
+    "tags": ["System Design", "Distributed Systems", "Redis", "Nginx", "Node.js"]
   },
   {
     "id": "4",
-    "title": "Spinning Donut",
-    "description": "A 3D ASCII spinning donut animation renderer calculating torus illumination and projection math.",
-    "link": "https://github.com/dat-nnguyen/SpinningDonut",
-    "tags": ["C", "3D Math", "ASCII"]
+    "title": "Wealify Guardian - AI Financial Assistant",
+    "description": "Read-only AI financial assistant that cross-checks ledgers, statements, and email receipts to detect duplicate charges, unallocated transfers, and subscription spikes with safety guardrails.",
+    "link": "https://github.com/dat-nnguyen/wlf-01-expense-management-transaction-safety",
+    "tags": ["AI Agents", "FinTech", "Python", "Safety Guardrails", "Finance"]
+  },
+  {
+    "id": "5",
+    "title": "Fitness & Workout Tracker API",
+    "description": "Production-grade RESTful backend service built to log exercises and sets, track workout splits, and calculate progressive overload analytics.",
+    "link": "https://github.com/dat-nnguyen/workout-tracker",
+    "tags": ["Node.js", "REST API", "Docker", "JWT", "Analytics"]
   }
 ]
