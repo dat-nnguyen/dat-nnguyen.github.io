@@ -22,6 +22,7 @@
     --accent-color: #60a5fa;
     --accent-primary: #60a5fa;
     --accent-hover: #93c5fd;
+    --accent-contrast: #0f172a;
     
     /* Solid Pastel Tags (Dark) */
     --tag-bg: #162335;
@@ -55,6 +56,7 @@ body.light-theme {
     --accent-color: #0284c7;
     --accent-primary: #0284c7;
     --accent-hover: #0369a1;
+    --accent-contrast: #ffffff;
     
     --tag-bg: #f0f9ff;
     --tag-text: #0284c7;
@@ -139,7 +141,8 @@ body {
 .sidebar-header,
 .sidebar-bio,
 .sidebar-copyright,
-#theme-toggle {
+#theme-toggle,
+.coffee-btn {
     transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
 }
 
@@ -339,26 +342,31 @@ a:hover {
 
 .coffee-btn {
     width: 100%;
-    background-color: transparent;
-    color: var(--text-secondary);
-    border: 1px solid var(--border-color);
-    padding: 8px 12px;
+    background-color: var(--accent-primary);
+    color: var(--accent-contrast);
+    border: 1px solid var(--accent-primary);
+    padding: 9px 14px;
     border-radius: 6px;
     cursor: pointer;
     font-family: var(--font-sans);
-    font-size: 0.84rem;
-    font-weight: 500;
+    font-size: 0.86rem;
+    font-weight: 600;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    transition: all 0.15s ease;
+    gap: 7px;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
 }
 
 .coffee-btn:hover {
-    border-color: var(--accent-primary);
-    color: var(--accent-primary);
-    background-color: var(--bg-surface);
+    background-color: var(--accent-hover);
+    border-color: var(--accent-hover);
+    color: var(--accent-contrast);
+    transform: translateY(-1px);
+}
+
+.coffee-btn:active {
+    transform: translateY(0);
 }
 
 /* 5. MAIN CONTENT REGION */
