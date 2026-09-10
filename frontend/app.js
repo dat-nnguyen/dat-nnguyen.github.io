@@ -939,9 +939,28 @@ function handleRouting() {
     fetchAndRenderPosts('life', 'latest-blogs-container', 5);
     fetchAndRenderPosts('technical', 'latest-articles-container', 5);
     fetchAndRenderProjects('latest-projects-container', 4);
-    updateActiveNav(null);
   }
 }
+
+// Smooth scrolling for in-article section anchor links (Table of Contents)
+document.addEventListener('click', (e) => {
+  const anchor = e.target.closest('a[href^="#"]');
+  if (!anchor) return;
+  const href = anchor.getAttribute('href');
+  if (!href || href === '#') return;
+
+  const spaRoutes = ['#home', '#about', '#blog', '#blogs', '#articles', '#projects'];
+  const isSpaRoute = spaRoutes.includes(href) || href.startsWith('#post/');
+
+  if (!isSpaRoute) {
+    const targetId = href.substring(1);
+    const targetElement = document.getElementById(targetId);
+    if (targetElement) {
+      e.preventDefault();
+      targetElement.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+});
 
 window.addEventListener('hashchange', handleRouting);
 

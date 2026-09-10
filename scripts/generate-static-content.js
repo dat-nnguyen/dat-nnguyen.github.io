@@ -3,6 +3,15 @@ const path = require('path');
 const matter = require('gray-matter');
 const marked = require('marked');
 
+marked.use({
+  renderer: {
+    heading({ text, depth }) {
+      const slug = text.toLowerCase().replace(/[^\w\s-]/g, '').trim().replace(/[\s_-]+/g, '-');
+      return `<h${depth} id="${slug}">${text}</h${depth}>\n`;
+    }
+  }
+});
+
 function calculateReadingTime(content) {
   const words = content.trim().split(/\s+/).filter(Boolean).length;
   const mins = Math.max(1, Math.ceil(words / 200));

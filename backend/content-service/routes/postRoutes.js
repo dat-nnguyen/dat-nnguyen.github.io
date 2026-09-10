@@ -5,6 +5,15 @@ const fs = require('fs').promises;
 const matter = require('gray-matter');
 const marked = require('marked');
 
+marked.use({
+  renderer: {
+    heading({ text, depth }) {
+      const slug = text.toLowerCase().replace(/[^\w\s-]/g, '').trim().replace(/[\s_-]+/g, '-');
+      return `<h${depth} id="${slug}">${text}</h${depth}>\n`;
+    }
+  }
+});
+
 async function getPostsDir() {
   const candidates = [
     path.join(__dirname, '../markdown_content/posts'),

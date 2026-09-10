@@ -500,6 +500,7 @@ a:hover {
     margin-top: 36px;
     margin-bottom: 16px;
     color: var(--text-primary);
+    scroll-margin-top: 24px;
 }
 
 .markdown-body h3 {
@@ -507,6 +508,24 @@ a:hover {
     margin-top: 28px;
     margin-bottom: 12px;
     color: var(--text-primary);
+    scroll-margin-top: 24px;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+    margin: 14px 0 20px 24px;
+    line-height: 1.8;
+}
+
+.markdown-body li {
+    margin-bottom: 6px;
+}
+
+.markdown-body ul ul,
+.markdown-body ol ul,
+.markdown-body ul ol {
+    margin-top: 6px;
+    margin-bottom: 6px;
 }
 
 .markdown-body hr {
