@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dat Nguyen's Website</title>
+    <title>Dat Nguyen — Software Engineer & Builder</title>
     <link rel="icon" href="data:,">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
       if (localStorage.getItem('theme') === 'light') {
         document.documentElement.classList.add('light-theme');
@@ -13,6 +16,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<div class="ambient-glow"></div>
 <div class="app-layout">
 
     <!-- MOBILE HEADER -->
@@ -26,18 +30,20 @@
     <!-- LEFT SIDEBAR -->
     <aside class="sidebar">
         <div class="sidebar-header">
-            <a href="#home" class="site-title" id="nav-home">Dat Nguyen</a>
-            <button id="theme-toggle">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun-icon lucide-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+            <div class="site-branding">
+                <a href="#home" class="site-title" id="nav-home">Dat Nguyen</a>
+                <span class="status-indicator" title="Available for engineering opportunities">
+                    <span class="status-dot"></span> Available for building
+                </span>
+            </div>
+            <button id="theme-toggle" aria-label="Toggle theme" title="Toggle theme">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun-icon lucide-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
             </button>
         </div>
 
         <div class="sidebar-bio">
             <p class="sidebar-label">About Me</p>
-            <!-- HIGHLIGHTED NAME -->
-            <p>I'm <span class="text-accent">Dat</span> –
-                    a software engineer passionate about building scalable,
-                    efficient systems. This is where I share my projects, notes, and ideas 🧑‍💻</p>
+            <p>I'm <span class="text-accent">Dat</span>, a software engineer passionate about building scalable, high-performance distributed systems. This is where I share my projects, engineering deep dives, and thoughts.</p>
         </div>
 
         <nav class="sidebar-nav">
@@ -130,10 +136,18 @@
             <div id="view-home">
 
             <header class="hero-section" id="section-hero">
-                <h1>Hey, I'm Dat Nguyen!</h1>
-                <p>I'm a software engineer from grasshopper country and really into building cool stuff. My long-term goal is to build my career at a top-tier technology company (MANGOS). Besides, I am passionate about indie games, especially Don't Starve.</p>
-
-                <p>Everything on this site is written by me (just starting to <a href="#blog" id="inline-nav-blog" class="text-accent">blog</a>), not AI.</p>
+                <div class="hero-badge-row">
+                    <span class="hero-status-pill">
+                        <span class="status-dot"></span>
+                        Available for Engineering Roles
+                    </span>
+                    <span class="hero-chip">Distributed Systems</span>
+                    <span class="hero-chip">Node.js &bull; Python &bull; Go</span>
+                    <span class="hero-chip">Hanoi, Vietnam</span>
+                </div>
+                <h1 class="hero-title">Hey, I'm Dat Nguyen.</h1>
+                <p class="hero-lead">I'm a software engineer from grasshopper country passionate about crafting reliable backend architectures and distributed systems. My long-term aspiration is building core infrastructure at top-tier technology companies (MANGOS). Outside of terminal windows, I enjoy indie survival games like <em>Don't Starve</em>.</p>
+                <p class="hero-subtext">Everything on this site is hand-crafted and written by me—no synthetic slop.</p>
             </header>
 
             <!-- SECTION: Latest Blogs -->
@@ -147,7 +161,8 @@
                     <span>Latest Blogs</span>
                 </h2>
 
-                <p class="section-desc">Life, thoughts, and everything                 <div id="latest-blogs-container" class="list-layout">
+                <p class="section-desc">Life, thoughts, and everything in between.</p>
+                <div id="latest-blogs-container" class="list-layout">
                     <div class="skeleton-box skeleton-text"></div>
                     <div class="skeleton-box skeleton-text"></div>
                 </div>
@@ -168,7 +183,7 @@
                     </svg>
                     <span>Deep Dives</span>
                 </h2>
-                <p class="section-desc">Just sharing some knowledge.</p>
+                <p class="section-desc">Technical engineering analyses and architectural breakdowns.</p>
                 <div id="latest-articles-container" class="list-layout">
                     <div class="skeleton-box skeleton-text"></div>
                     <div class="skeleton-box skeleton-text"></div>
@@ -189,7 +204,7 @@
                     </svg>
                     <span>Projects</span>
                 </h2>
-                <p class="section-desc">Things I've built and open-sourced.</p>
+                <p class="section-desc">Distributed architectures, microservices, and backend tooling.</p>
                 <div id="latest-projects-container" class="card-grid">
                     <div class="skeleton-box skeleton-card-box"></div>
                     <div class="skeleton-box skeleton-card-box"></div>
@@ -198,7 +213,7 @@
                     <a href="#projects" class="text-accent">View all projects &rarr;</a>
                 </div>
             </section>
-            </div>    </div>
+            </div>
 
             <!-- VIEW: All Blogs Page -->
             <div id="view-blogs" class="hidden">

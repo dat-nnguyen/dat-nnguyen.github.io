@@ -765,9 +765,12 @@ async function fetchAndRenderProjects(containerId, limit = null) {
   container.innerHTML = projects
     .map(
       (project) => `
-        <div class="card">
-            <h3><a href="${project.link || '#'}" target="_blank" rel="noopener noreferrer">${project.title}</a></h3>
-            <p>${project.description}</p>
+        <div class="card project-card">
+            <div class="card-header">
+                <h3 class="project-card-title"><a href="${project.link || '#'}" target="_blank" rel="noopener noreferrer">${project.title}</a></h3>
+                <span class="card-arrow-icon" aria-hidden="true">↗</span>
+            </div>
+            <p class="project-card-desc">${project.description}</p>
             ${
               project.tags && project.tags.length > 0
                 ? `<div class="project-tags">
