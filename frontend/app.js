@@ -112,6 +112,22 @@ let isAboutFetched = false;
 const rawApiBase = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
 const API_BASE_URL = rawApiBase.endsWith('/api') ? rawApiBase.slice(0, -4) : rawApiBase;
 
+let staticPostsMemoryCache = null;
+
+async function getStaticPosts() {
+  if (staticPostsMemoryCache) return staticPostsMemoryCache;
+  try {
+    const staticRes = await fetch('./data/posts.json');
+    if (staticRes.ok) {
+      staticPostsMemoryCache = await staticRes.json();
+      return staticPostsMemoryCache;
+    }
+  } catch (staticErr) {
+    console.warn('Static posts fetch notice, checking API Gateway fallback:', staticErr.message);
+  }
+  return null;
+}
+
 async function fetchAboutContent() {
   if (isAboutFetched) return;
 
@@ -167,11 +183,10 @@ async function openPost(slug) {
   try {
     let post = null;
 
-    // 1. Primary: load from static compiled bundle (fastest and always up-to-date with Git)
+    // 1. Primary: load from static compiled bundle (fastest and cached in memory)
     try {
-      const staticRes = await fetch('./data/posts.json', { cache: 'no-cache' });
-      if (staticRes.ok) {
-        const staticPosts = await staticRes.json();
+      const staticPosts = await getStaticPosts();
+      if (staticPosts) {
         post = staticPosts.find((p) => p.slug === slug);
       }
     } catch (staticErr) {
@@ -698,9 +713,9 @@ async function fetchAndRenderPosts(category, containerId, limit = null) {
 
   // 1. Primary source of truth: static bundled posts compiled from Markdown at build time
   try {
-    const staticRes = await fetch('./data/posts.json', { cache: 'no-cache' });
-    if (staticRes.ok) {
-      posts = await staticRes.json();
+    const staticPosts = await getStaticPosts();
+    if (staticPosts) {
+      posts = [...staticPosts];
     }
   } catch (staticErr) {
     console.warn('Static posts fetch notice, checking API Gateway fallback:', staticErr.message);

@@ -21,7 +21,7 @@ My very first hackathon was massive. The organizers and community billed it as t
 
 I hopped into the event’s online community and matched with a team. My teammates turned out to be super friendly and supportive.
 
-![Our 4-person team at the Vietnam AI Innovation Challenge 2026](./images/hackathon-ai-innovation-team.jpg)
+![Our 4-person team at the Vietnam AI Innovation Challenge 2026](./images/hackathon-ai-innovation-team.webp)
 *Think Bold. Build Fast. Our 4-person team ready for the Vietnam AI Innovation Challenge 2026*
 
 But launch day on-site? It was pure chaos:
@@ -30,7 +30,7 @@ But launch day on-site? It was pure chaos:
 - The room felt like a sauna because the AC couldn't handle the crowd.
 - The food was underwhelming, and the judging criteria were so vague that a flood of post-event drama hit the community shortly after.
 
-![Hacking under pressure in the venue](./images/hackathon-coding-sauna.jpg)
+![Hacking under pressure in the venue](./images/hackathon-coding-sauna.webp)
 *Hacking away at the desk with giant cooling units working overtime*
 
 Still, because it was my first time, I took everything in stride with an open mind. We pushed through and submitted our project on time. You can check out what we built here: [Heart Hospital on GitHub](https://github.com/TranNhatThach/Hackathon-Innovation-VietNam-2026-).
@@ -41,12 +41,12 @@ About a month later, I signed up for my second hackathon. The scale was smaller,
 
 The theme centered on cross-border e-commerce. Three of us from the previous team reunited (one teammate couldn't join because she’s based in southern Vietnam). This time, every team was assigned a dedicated mentor, and ours was a well-known, highly experienced engineer in the Vietnamese tech scene.
 
-![The Three Musketeers team at Cross Border AI Innovation Summit 2026](./images/hackathon-three-musketeers.jpg)
+![The Three Musketeers team at Cross Border AI Innovation Summit 2026](./images/hackathon-three-musketeers.webp)
 *Reuniting as "The Three Musketeers" for the Cross Border AI Innovation Summit 2026*
 
 We took a gamble on a tough, complex problem. The time pressure was insane—we literally hit the "Submit" button just 60 seconds before the portal closed. You can check out our submission here: [Wealify on GitHub](https://github.com/dat-nnguyen/wlf-01-expense-management-transaction-safety).
 
-![On-site at the Cross Border AI Innovation Summit 2026](./images/hackathon-cross-border-summit.jpg)
+![On-site at the Cross Border AI Innovation Summit 2026](./images/hackathon-cross-border-summit.webp)
 *On-site at the summit right in front of the main stage*
 
 We didn't make the top 8 for final pitching. However, sitting in the audience watching the finalists present was an absolute eye-opener. Their technical builds were solid, but what set them apart was their deep domain knowledge, sharp business logic, and clear understanding of market pain points. I learned a ton just from watching them, and I also got the chance to network with some great people.

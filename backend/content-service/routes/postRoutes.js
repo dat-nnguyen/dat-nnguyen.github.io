@@ -10,6 +10,12 @@ marked.use({
     heading({ text, depth }) {
       const slug = text.toLowerCase().replace(/[^\w\s-]/g, '').trim().replace(/[\s_-]+/g, '-');
       return `<h${depth} id="${slug}">${text}</h${depth}>\n`;
+    },
+    image(token) {
+      const href = token.href || '';
+      const text = token.text || '';
+      const title = token.title ? ` title="${token.title}"` : '';
+      return `<img src="${href}" alt="${text}"${title} loading="lazy" decoding="async" />`;
     }
   }
 });
