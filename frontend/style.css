@@ -932,6 +932,36 @@ a:hover {
     border-color: #10b981;
 }
 
+.markdown-body a {
+    color: var(--accent-primary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    transition: color 0.15s ease;
+}
+
+.markdown-body a:hover {
+    color: var(--accent-hover);
+}
+
+.markdown-body img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    margin: 24px auto 10px auto;
+    display: block;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.markdown-body p > em:only-child {
+    display: block;
+    text-align: center;
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    margin-top: -2px;
+    margin-bottom: 24px;
+}
+
 /* 14. POST ACTIONS */
 .post-actions {
     display: flex;
