@@ -15,7 +15,7 @@ Time flies, right? In Vietnam, we have a funny idiom that describes how fast tim
 
 100 days—3 months left. Let’s begin the winter arc and make it brilliant. Every goal, every promise to yourself: reflect on all of them, then begin to finish them. You don’t need to rush so much, and don’t compare your life with others—just keep up your own pace.
 
-![You don't know me son!](./images/you-dont-know-me-son.png)
+![You don't know me son!](./images/you-dont-know-me-son.webp)
 *You don't know me son!*
 
 Work as hard as possible, as if it would be ridiculous if you didn't succeed.

@@ -952,7 +952,6 @@ a:hover {
     display: block;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
     background-color: var(--bg-surface);
-    content-visibility: auto;
 }
 
 .markdown-body p > em:only-child {

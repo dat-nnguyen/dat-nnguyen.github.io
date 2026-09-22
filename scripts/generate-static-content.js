@@ -13,7 +13,7 @@ marked.use({
       const href = token.href || '';
       const text = token.text || '';
       const title = token.title ? ` title="${token.title}"` : '';
-      return `<img src="${href}" alt="${text}"${title} loading="lazy" decoding="async" />`;
+      return `<img src="${href}" alt="${text}"${title} decoding="async" fetchpriority="high" />`;
     }
   }
 });
