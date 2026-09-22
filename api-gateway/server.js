@@ -15,6 +15,7 @@ if (process.env.DATABASE_URL) {
   dbPool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false },
+    connectionTimeoutMillis: 3000,
   });
 
   // Auto-initialize comments, likes, subscribers, and sent_notifications tables if needed

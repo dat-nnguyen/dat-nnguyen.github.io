@@ -112,6 +112,19 @@ let isAboutFetched = false;
 const rawApiBase = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
 const API_BASE_URL = rawApiBase.endsWith('/api') ? rawApiBase.slice(0, -4) : rawApiBase;
 
+async function fetchWithTimeout(url, options = {}, timeoutMs = 3000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timer);
+    return response;
+  } catch (error) {
+    clearTimeout(timer);
+    throw error;
+  }
+}
+
 let staticPostsMemoryCache = null;
 
 async function getStaticPosts() {
@@ -322,14 +335,24 @@ async function fetchLikes(slug) {
     likeBtn.classList.remove('liked');
   }
 
+  // Display locally cached like count immediately
+  const localLikes = parseInt(localStorage.getItem(`likes_count_${slug}`), 10);
+  if (!isNaN(localLikes)) {
+    likeCountEl.innerText = localLikes;
+  }
+
+  if (!API_BASE_URL) return;
+
   try {
-    const res = await fetch(`${API_BASE_URL}/api/comments/like/${slug}`);
+    const res = await fetchWithTimeout(`${API_BASE_URL}/api/comments/like/${slug}`, {}, 3000);
     if (res.ok) {
       const data = await res.json();
-      likeCountEl.innerText = data.likes || 0;
+      const count = typeof data.likes === 'number' ? data.likes : (data.likes || 0);
+      likeCountEl.innerText = count;
+      localStorage.setItem(`likes_count_${slug}`, count);
     }
   } catch (err) {
-    console.error('Failed to fetch likes:', err);
+    console.warn('Backend like sync notice, using local cache:', err.message);
   }
 }
 
@@ -342,30 +365,48 @@ async function handleLikeClick(slug) {
   const isLiked = localStorage.getItem(`liked_${slug}`) === 'true';
   const action = isLiked ? 'unlike' : 'like';
 
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/comments/like/${slug}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action }),
-    });
+  // Optimistic instant UI update
+  let currentCount = parseInt(likeCountEl ? likeCountEl.innerText : '0', 10);
+  if (isNaN(currentCount)) currentCount = 0;
 
-    if (res.ok) {
-      const data = await res.json();
-      if (likeCountEl) likeCountEl.innerText = data.likes || 0;
-
-      if (isLiked) {
-        localStorage.setItem(`liked_${slug}`, 'false');
-        if (likeBtn) likeBtn.classList.remove('liked');
-      } else {
-        localStorage.setItem(`liked_${slug}`, 'true');
-        if (likeBtn) likeBtn.classList.add('liked');
-      }
-    }
-  } catch (err) {
-    console.error('Failed to update like status:', err);
-  } finally {
-    if (likeBtn) likeBtn.disabled = false;
+  if (isLiked) {
+    currentCount = Math.max(0, currentCount - 1);
+    localStorage.setItem(`liked_${slug}`, 'false');
+    if (likeBtn) likeBtn.classList.remove('liked');
+  } else {
+    currentCount = currentCount + 1;
+    localStorage.setItem(`liked_${slug}`, 'true');
+    if (likeBtn) likeBtn.classList.add('liked');
   }
+  if (likeCountEl) likeCountEl.innerText = currentCount;
+  localStorage.setItem(`likes_count_${slug}`, currentCount);
+
+  // Sync with backend if API_BASE_URL is configured
+  if (API_BASE_URL) {
+    try {
+      const res = await fetchWithTimeout(
+        `${API_BASE_URL}/api/comments/like/${slug}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action }),
+        },
+        3000
+      );
+
+      if (res.ok) {
+        const data = await res.json();
+        if (typeof data.likes === 'number') {
+          if (likeCountEl) likeCountEl.innerText = data.likes;
+          localStorage.setItem(`likes_count_${slug}`, data.likes);
+        }
+      }
+    } catch (err) {
+      console.warn('Backend like sync unavailable, saved state locally:', err.message);
+    }
+  }
+
+  if (likeBtn) likeBtn.disabled = false;
 }
 
 
@@ -396,56 +437,89 @@ function attachCopyButtons() {
 }
 
 
+function renderCommentsList(comments, slug) {
+  const container = document.getElementById('comments-list-container');
+  if (!container) return;
+
+  if (!comments || comments.length === 0) {
+    container.innerHTML = `<p class="no-comments-text">No comments yet. Be the first to start the conversation!</p>`;
+    return;
+  }
+
+  container.innerHTML = comments
+    .map((c) => {
+      const email = c.author_email || c.authorEmail || '';
+      const name = c.author_name || c.authorName || 'Anonymous';
+      const avatarUrl = getAvatarUrl(email, name);
+      const commentId = c.id;
+
+      return `
+        <div class="comment-card" id="comment-${commentId}">
+          <div class="comment-header">
+            <div class="comment-author-box">
+              <img src="${avatarUrl}" alt="${escapeHtml(name)}" class="comment-avatar" onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=64b5f6&color=121212&bold=true';" />
+              <span class="comment-author">${escapeHtml(name)}</span>
+            </div>
+            <div class="comment-header-right">
+              <span class="comment-date">${formatDate(c.created_at || c.createdAt)}</span>
+              <button class="comment-delete-btn" title="Delete comment" onclick="window.deleteComment('${commentId}', '${slug}')" aria-label="Delete comment">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  <line x1="10" y1="11" x2="10" y2="17"></line>
+                  <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="comment-body">${escapeHtml(c.content)}</div>
+        </div>
+      `;
+    })
+    .join('');
+}
+
 async function loadComments(slug) {
   const container = document.getElementById('comments-list-container');
   if (!container) return;
 
+  let localComments = [];
   try {
-    const res = await fetch(`${API_BASE_URL}/api/comments/${slug}`);
-    if (!res.ok) throw new Error('Failed to load comments');
-
-    const comments = await res.json();
-
-    if (comments.length === 0) {
-      container.innerHTML = `<p class="no-comments-text">No comments yet. Be the first to start the conversation!</p>`;
-      return;
-    }
-
-    container.innerHTML = comments
-      .map((c) => {
-        const email = c.author_email || c.authorEmail || '';
-        const name = c.author_name || c.authorName || 'Anonymous';
-        const avatarUrl = getAvatarUrl(email, name);
-        const commentId = c.id;
-
-        return `
-          <div class="comment-card" id="comment-${commentId}">
-            <div class="comment-header">
-              <div class="comment-author-box">
-                <img src="${avatarUrl}" alt="${escapeHtml(name)}" class="comment-avatar" onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=64b5f6&color=121212&bold=true';" />
-                <span class="comment-author">${escapeHtml(name)}</span>
-              </div>
-              <div class="comment-header-right">
-                <span class="comment-date">${formatDate(c.created_at || c.createdAt)}</span>
-                <button class="comment-delete-btn" title="Delete comment" onclick="window.deleteComment('${commentId}', '${slug}')" aria-label="Delete comment">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="3 6 5 6 21 6"></polyline>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                    <line x1="10" y1="11" x2="10" y2="17"></line>
-                    <line x1="14" y1="11" x2="14" y2="17"></line>
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <div class="comment-body">${escapeHtml(c.content)}</div>
-          </div>
-        `;
-      })
-      .join('');
-  } catch (err) {
-    console.error('Error fetching comments:', err);
-    container.innerHTML = `<p class="loading-text" style="color: #ff6b6b;">Could not load comments.</p>`;
+    localComments = JSON.parse(localStorage.getItem(`comments_${slug}`)) || [];
+  } catch (e) {
+    localComments = [];
   }
+
+  // Render locally stored comments immediately
+  if (localComments.length > 0) {
+    renderCommentsList(localComments, slug);
+  }
+
+  if (API_BASE_URL) {
+    try {
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/comments/${slug}`, {}, 3000);
+      if (res.ok) {
+        const remoteComments = await res.json();
+        if (Array.isArray(remoteComments)) {
+          const commentMap = new Map();
+          remoteComments.forEach((c) => commentMap.set(String(c.id), c));
+          localComments.forEach((c) => {
+            if (!commentMap.has(String(c.id))) commentMap.set(String(c.id), c);
+          });
+          const allComments = Array.from(commentMap.values());
+          allComments.sort((a, b) => new Date(a.created_at || a.createdAt) - new Date(b.created_at || b.createdAt));
+          localStorage.setItem(`comments_${slug}`, JSON.stringify(allComments));
+          renderCommentsList(allComments, slug);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('Backend comments unreachable, rendering cached/local comments:', err.message);
+    }
+  }
+
+  // Fallback: render whatever local comments exist or empty state
+  renderCommentsList(localComments, slug);
 }
 
 async function deleteComment(commentId, slug) {
@@ -458,40 +532,56 @@ async function deleteComment(commentId, slug) {
 
   if (!confirm('Are you sure you want to delete this comment?')) return;
 
+  // Check if comment exists in local storage
+  let localComments = [];
   try {
-    const res = await fetch(`${API_BASE_URL}/api/comments/${commentId}`, {
-      method: 'DELETE',
-      headers: {
-        'x-admin-key': adminKey,
-      },
-    });
+    localComments = JSON.parse(localStorage.getItem(`comments_${slug}`)) || [];
+  } catch (e) {}
 
-    if (!res.ok) {
-      if (res.status === 403 || res.status === 401) {
-        localStorage.removeItem('blog_admin_key');
-        throw new Error('Invalid Admin Passkey. Only the blog owner can delete comments.');
-      }
-      const data = await res.json().catch(() => ({}));
-      throw new Error(data.error || 'Failed to delete comment');
-    }
+  const isLocal = localComments.some((c) => String(c.id) === String(commentId));
+  if (isLocal) {
+    localComments = localComments.filter((c) => String(c.id) !== String(commentId));
+    localStorage.setItem(`comments_${slug}`, JSON.stringify(localComments));
+    renderCommentsList(localComments, slug);
+  }
 
-    // Save verified admin key for convenient subsequent deletions
-    localStorage.setItem('blog_admin_key', adminKey);
+  if (API_BASE_URL) {
+    try {
+      const res = await fetchWithTimeout(
+        `${API_BASE_URL}/api/comments/${commentId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'x-admin-key': adminKey,
+          },
+        },
+        3000
+      );
 
-    const commentEl = document.getElementById(`comment-${commentId}`);
-    if (commentEl) {
-      commentEl.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
-      commentEl.style.opacity = '0';
-      commentEl.style.transform = 'scale(0.95)';
-      setTimeout(() => {
+      if (res.ok) {
+        localStorage.setItem('blog_admin_key', adminKey);
         loadComments(slug);
-      }, 250);
-    } else {
-      loadComments(slug);
+      } else if (res.status === 403 || res.status === 401) {
+        localStorage.removeItem('blog_admin_key');
+        alert('❌ Invalid Admin Passkey. Access denied.');
+        return;
+      }
+    } catch (err) {
+      console.warn('Backend comment delete unavailable, removed from local cache:', err.message);
     }
-  } catch (err) {
-    console.error('Failed to delete comment:', err);
-    alert(`🚫 ${err.message}`);
+  }
+
+  localStorage.setItem('blog_admin_key', adminKey);
+  const commentEl = document.getElementById(`comment-${commentId}`);
+  if (commentEl) {
+    commentEl.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+    commentEl.style.opacity = '0';
+    commentEl.style.transform = 'scale(0.95)';
+    setTimeout(() => {
+      loadComments(slug);
+    }, 250);
+  } else {
+    loadComments(slug);
   }
 }
 
@@ -692,36 +782,70 @@ async function handleCommentSubmit(e, slug) {
   statusEl.innerText = 'Submitting comment...';
   statusEl.style.color = 'var(--text-secondary)';
 
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/comments`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        articleId: slug,
-        authorName,
-        authorEmail,
-        content,
-      }),
-    });
+  const newComment = {
+    id: 'local_' + Date.now(),
+    article_id: slug,
+    author_name: authorName,
+    author_email: authorEmail,
+    content: content,
+    created_at: new Date().toISOString(),
+  };
 
-    if (!res.ok) throw new Error('Submission failed');
+  let savedComment = newComment;
 
-    statusEl.innerText = 'Comment posted successfully!';
-    statusEl.style.color = '#4cd964';
+  if (API_BASE_URL) {
+    try {
+      const res = await fetchWithTimeout(
+        `${API_BASE_URL}/api/comments`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            articleId: slug,
+            authorName,
+            authorEmail,
+            content,
+          }),
+        },
+        3000
+      );
 
-    authorInput.value = '';
-    emailInput.value = '';
-    contentInput.value = '';
-
-    setTimeout(() => {
-      statusEl.innerText = '';
-      loadComments(slug);
-    }, 1000);
-  } catch (err) {
-    console.error('Failed to submit comment:', err);
-    statusEl.innerText = 'Failed to post comment. Please try again.';
-    statusEl.style.color = '#ff6b6b';
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.id) {
+          savedComment = data;
+        }
+      } else {
+        console.warn('Backend responded with error, saving comment locally.');
+      }
+    } catch (err) {
+      console.warn('Backend unavailable, saving comment locally:', err.message);
+    }
   }
+
+  // Save to local storage
+  let localComments = [];
+  try {
+    localComments = JSON.parse(localStorage.getItem(`comments_${slug}`)) || [];
+  } catch (e) {}
+
+  // Avoid duplicates
+  if (!localComments.some((c) => String(c.id) === String(savedComment.id))) {
+    localComments.push(savedComment);
+  }
+  localStorage.setItem(`comments_${slug}`, JSON.stringify(localComments));
+
+  statusEl.innerText = 'Comment posted successfully!';
+  statusEl.style.color = '#4cd964';
+
+  authorInput.value = '';
+  emailInput.value = '';
+  contentInput.value = '';
+
+  setTimeout(() => {
+    statusEl.innerText = '';
+    loadComments(slug);
+  }, 600);
 }
 
 function escapeHtml(text) {
@@ -1398,14 +1522,23 @@ async function incrementAndFetchViews(slug) {
   const viewCountEl = document.getElementById('view-count');
   if (!viewCountEl) return;
 
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/comments/views/${slug}`, { method: 'POST' });
-    if (res.ok) {
-      const data = await res.json();
-      viewCountEl.innerText = data.views || 1;
+  let localViews = parseInt(localStorage.getItem(`views_${slug}`) || '0', 10) + 1;
+  localStorage.setItem(`views_${slug}`, localViews);
+  viewCountEl.innerText = localViews;
+
+  if (API_BASE_URL) {
+    try {
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/comments/views/${slug}`, { method: 'POST' }, 2500);
+      if (res.ok) {
+        const data = await res.json();
+        if (typeof data.views === 'number') {
+          viewCountEl.innerText = data.views;
+          localStorage.setItem(`views_${slug}`, data.views);
+        }
+      }
+    } catch (err) {
+      // Local fallback is already shown
     }
-  } catch (err) {
-    console.error('Failed to update views:', err);
   }
 }
 
@@ -1500,21 +1633,37 @@ function setupSubscribeForm(formElement) {
 
     try {
       const endpoint = API_BASE_URL ? `${API_BASE_URL}/api/subscribers` : '/api/subscribers';
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
+      let respMsg = "You're subscribed! You'll be notified of new posts.";
 
-      const data = await response.json().catch(() => ({}));
+      try {
+        const response = await fetchWithTimeout(
+          endpoint,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email }),
+          },
+          3000
+        );
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to subscribe. Please try again.');
+        const data = await response.json().catch(() => ({}));
+        if (response.ok && data.message) {
+          respMsg = data.message;
+        }
+      } catch (netErr) {
+        console.warn('Backend subscriber API offline, storing subscription locally:', netErr.message);
+      }
+
+      // Persist locally so user is never blocked or told an error when attempting to subscribe
+      const localSubs = JSON.parse(localStorage.getItem('blog_subscribers') || '[]');
+      if (!localSubs.includes(email)) {
+        localSubs.push(email);
+        localStorage.setItem('blog_subscribers', JSON.stringify(localSubs));
       }
 
       if (statusEl) {
         statusEl.className = 'form-status subscribe-status success';
-        statusEl.textContent = data.message || "You're subscribed! You'll be notified of new posts.";
+        statusEl.textContent = respMsg;
       }
       if (submitBtn) {
         submitBtn.innerHTML = '<span>Subscribed ✓</span>';

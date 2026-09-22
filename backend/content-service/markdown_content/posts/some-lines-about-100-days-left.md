@@ -18,7 +18,7 @@ Time flies, right? In Vietnam, we have a funny idiom that describes how fast tim
 ![You don't know me son!](./images/you-dont-know-me-son.webp)
 *You don't know me son!*
 
-Work as hard as possible, as if it would be ridiculous if you didn't succeed.
+Work as hard as possible, as if failing were not an option.
 
 Moreover, you should do outdoor activities every day—walk, run, or work out without your phone. Just you, the sounds of nature, and your inner voice.
 
