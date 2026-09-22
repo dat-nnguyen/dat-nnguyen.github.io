@@ -232,6 +232,33 @@ async function openPost(slug) {
         </div>
       </article>
 
+      <!-- SUBSCRIBE NEWSLETTER SECTION -->
+      <section class="subscribe-section" id="post-subscribe-section">
+        <div class="subscribe-card">
+          <div class="subscribe-header">
+            <div class="subscribe-icon">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="20" height="16" x="2" y="4" rx="2"/>
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+              </svg>
+            </div>
+            <div class="subscribe-text">
+              <h3 class="subscribe-title">Enjoyed this post?</h3>
+              <p class="subscribe-desc">Get an email notification whenever I publish a new article or technical breakdown. Just your email, no spam.</p>
+            </div>
+          </div>
+          <form class="subscribe-form" id="post-subscribe-form">
+            <div class="subscribe-input-group">
+              <input type="email" class="form-input subscribe-input" placeholder="Enter your email" required autocomplete="email" />
+              <button type="submit" class="subscribe-btn">
+                <span>Subscribe</span>
+              </button>
+            </div>
+            <p class="form-status subscribe-status"></p>
+          </form>
+        </div>
+      </section>
+
       <!-- COMMENTS SECTION -->
       <section class="comments-section">
         <h3 class="comments-header">💬 What do you think?</h3>
@@ -266,6 +293,10 @@ async function openPost(slug) {
       shareBtn.addEventListener('click', () => handleShareClick(slug));
     }
 
+    const postSubscribeForm = document.getElementById('post-subscribe-form');
+    if (postSubscribeForm) {
+      setupSubscribeForm(postSubscribeForm);
+    }
 
     const commentForm = document.getElementById('comment-form');
     if (commentForm) {
@@ -1432,11 +1463,94 @@ document.addEventListener('click', (e) => {
   }
 });
 
-window.addEventListener('hashchange', handleRouting);
+// ==========================================
+// 8. EMAIL SUBSCRIPTION LOGIC
+// ==========================================
+function setupSubscribeForm(formElement) {
+  if (!formElement || formElement.dataset.bound === 'true') return;
+  formElement.dataset.bound = 'true';
 
+  formElement.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const emailInput = formElement.querySelector('.subscribe-input');
+    const submitBtn = formElement.querySelector('.subscribe-btn');
+    const statusEl = formElement.querySelector('.subscribe-status');
+    const email = emailInput ? emailInput.value.trim() : '';
+
+    if (!email) return;
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      if (statusEl) {
+        statusEl.className = 'form-status subscribe-status error';
+        statusEl.textContent = 'Please enter a valid email address.';
+      }
+      return;
+    }
+
+    const originalBtnHtml = submitBtn ? submitBtn.innerHTML : '<span>Subscribe</span>';
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span>Subscribing...</span>';
+    }
+    if (statusEl) {
+      statusEl.className = 'form-status subscribe-status';
+      statusEl.textContent = '';
+    }
+
+    try {
+      const endpoint = API_BASE_URL ? `${API_BASE_URL}/api/subscribers` : '/api/subscribers';
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to subscribe. Please try again.');
+      }
+
+      if (statusEl) {
+        statusEl.className = 'form-status subscribe-status success';
+        statusEl.textContent = data.message || "You're subscribed! You'll be notified of new posts.";
+      }
+      if (submitBtn) {
+        submitBtn.innerHTML = '<span>Subscribed ✓</span>';
+      }
+      if (emailInput) {
+        emailInput.value = '';
+      }
+      if (typeof showToast === 'function') {
+        showToast('Subscribed successfully! 🎉');
+      }
+    } catch (err) {
+      console.error('Subscription error:', err);
+      if (statusEl) {
+        statusEl.className = 'form-status subscribe-status error';
+        statusEl.textContent = err.message || 'Something went wrong. Please try again.';
+      }
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnHtml;
+      }
+    }
+  });
+}
+
+function initAllSubscribeForms() {
+  document.querySelectorAll('.subscribe-form').forEach(setupSubscribeForm);
+}
+
+window.addEventListener('hashchange', () => {
+  handleRouting();
+  setTimeout(initAllSubscribeForms, 50);
+});
 
 document.addEventListener('DOMContentLoaded', () => {
   handleRouting();
+  initAllSubscribeForms();
   if (typeof setupSearchListener === 'function') {
     setupSearchListener();
   }

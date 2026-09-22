@@ -28,10 +28,23 @@ const initDb = async () => {
             content TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
+        CREATE TABLE IF NOT EXISTS subscribers (
+            id SERIAL PRIMARY KEY,
+            email VARCHAR(255) UNIQUE NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            is_active BOOLEAN DEFAULT TRUE,
+            unsubscribe_token VARCHAR(64) UNIQUE
+        );
+        CREATE TABLE IF NOT EXISTS sent_notifications (
+            id SERIAL PRIMARY KEY,
+            post_slug VARCHAR(255) NOT NULL,
+            recipient_count INT DEFAULT 0,
+            sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
     `;
   try {
     await pool.query(createTableText);
-    console.log('Comments table is ready.');
+    console.log('Comments and subscribers tables are ready.');
   } catch (err) {
     console.error('Error creating table:', err);
   }
@@ -42,7 +55,9 @@ initDb()
   .catch(err => console.error('Database initialization failed:', err));
 
 const commentsRoutes = require('./routes/commentsRoutes')(pool);
+const subscribersRoutes = require('./routes/subscribersRoutes')(pool);
 app.use('/api/comments', commentsRoutes);
+app.use('/api/subscribers', subscribersRoutes);
 
 app.get('/api/test', (req, res) => {
   res.json({ message: 'Hello from the interaction service!' });

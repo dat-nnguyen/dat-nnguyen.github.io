@@ -17,7 +17,7 @@ if (process.env.DATABASE_URL) {
     ssl: { rejectUnauthorized: false },
   });
 
-  // Auto-initialize comments and likes tables if needed
+  // Auto-initialize comments, likes, subscribers, and sent_notifications tables if needed
   dbPool
     .query(
       `CREATE TABLE IF NOT EXISTS comments (
@@ -31,9 +31,22 @@ if (process.env.DATABASE_URL) {
       CREATE TABLE IF NOT EXISTS likes (
         article_id VARCHAR(255) PRIMARY KEY,
         likes_count INT DEFAULT 0
+      );
+      CREATE TABLE IF NOT EXISTS subscribers (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        is_active BOOLEAN DEFAULT TRUE,
+        unsubscribe_token VARCHAR(64) UNIQUE
+      );
+      CREATE TABLE IF NOT EXISTS sent_notifications (
+        id SERIAL PRIMARY KEY,
+        post_slug VARCHAR(255) NOT NULL,
+        recipient_count INT DEFAULT 0,
+        sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );`
     )
-    .then(() => console.log('✅ PostgreSQL connected: comments & likes tables ready.'))
+    .then(() => console.log('✅ PostgreSQL connected: comments, likes, & subscribers tables ready.'))
     .catch((err) => console.warn('⚠️ PostgreSQL initialization notice:', err.message));
 } else {
   dbPool = {
@@ -42,6 +55,7 @@ if (process.env.DATABASE_URL) {
 }
 
 const commentsRoutes = require('../backend/interaction-service/routes/commentsRoutes')(dbPool);
+const subscribersRoutes = require('../backend/interaction-service/routes/subscribersRoutes')(dbPool);
 
 const app = express();
 const PORT = process.env.PORT || 5050;
@@ -67,8 +81,10 @@ if (CONTENT_SERVICE_URL) {
 // Interaction Service Routes
 if (INTERACTION_SERVICE_URL) {
   app.use(createProxyMiddleware({ pathFilter: '/api/comments', target: INTERACTION_SERVICE_URL, changeOrigin: true }));
+  app.use(createProxyMiddleware({ pathFilter: '/api/subscribers', target: INTERACTION_SERVICE_URL, changeOrigin: true }));
 } else {
   app.use('/api/comments', commentsRoutes);
+  app.use('/api/subscribers', subscribersRoutes);
 }
 
 app.get('/', (req, res) => {
@@ -77,7 +93,7 @@ app.get('/', (req, res) => {
     platform: 'Railway',
     status: 'online',
     database: process.env.DATABASE_URL ? 'PostgreSQL' : 'in-memory fallback',
-    endpoints: ['/api/posts', '/api/about', '/api/projects', '/api/comments', '/health'],
+    endpoints: ['/api/posts', '/api/about', '/api/projects', '/api/comments', '/api/subscribers', '/health'],
   });
 });
 
