@@ -109,6 +109,20 @@ function updateActiveNav(activeId) {
 const aboutContainer = document.getElementById('about-bio-container');
 let isAboutFetched = false;
 
+import { createClient } from '@supabase/supabase-js';
+
+const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL || '').trim();
+const SUPABASE_ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
+
+let supabase = null;
+if (SUPABASE_URL && SUPABASE_ANON_KEY && !SUPABASE_URL.includes('your-project')) {
+  try {
+    supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  } catch (err) {
+    console.warn('Failed to initialize Supabase client:', err);
+  }
+}
+
 const rawApiBase = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
 const API_BASE_URL = rawApiBase.endsWith('/api') ? rawApiBase.slice(0, -4) : rawApiBase;
 
@@ -341,18 +355,38 @@ async function fetchLikes(slug) {
     likeCountEl.innerText = localLikes;
   }
 
-  if (!API_BASE_URL) return;
+  // 1. Try Supabase first if configured
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('likes')
+        .select('likes_count')
+        .eq('article_id', slug)
+        .maybeSingle();
 
-  try {
-    const res = await fetchWithTimeout(`${API_BASE_URL}/api/comments/like/${slug}`, {}, 3000);
-    if (res.ok) {
-      const data = await res.json();
-      const count = typeof data.likes === 'number' ? data.likes : (data.likes || 0);
-      likeCountEl.innerText = count;
-      localStorage.setItem(`likes_count_${slug}`, count);
+      if (!error && data && typeof data.likes_count === 'number') {
+        likeCountEl.innerText = data.likes_count;
+        localStorage.setItem(`likes_count_${slug}`, data.likes_count);
+        return;
+      }
+    } catch (err) {
+      console.warn('Supabase fetchLikes notice:', err.message);
     }
-  } catch (err) {
-    console.warn('Backend like sync notice, using local cache:', err.message);
+  }
+
+  // 2. Fallback to API Gateway if configured
+  if (API_BASE_URL) {
+    try {
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/comments/like/${slug}`, {}, 3000);
+      if (res.ok) {
+        const data = await res.json();
+        const count = typeof data.likes === 'number' ? data.likes : (data.likes || 0);
+        likeCountEl.innerText = count;
+        localStorage.setItem(`likes_count_${slug}`, count);
+      }
+    } catch (err) {
+      console.warn('Backend like sync notice, using local cache:', err.message);
+    }
   }
 }
 
@@ -381,8 +415,36 @@ async function handleLikeClick(slug) {
   if (likeCountEl) likeCountEl.innerText = currentCount;
   localStorage.setItem(`likes_count_${slug}`, currentCount);
 
-  // Sync with backend if API_BASE_URL is configured
-  if (API_BASE_URL) {
+  // 1. Sync with Supabase if configured
+  if (supabase) {
+    try {
+      // Try stored procedure first
+      const { data, error } = await supabase.rpc('increment_like', {
+        post_slug: slug,
+        is_unlike: isLiked,
+      });
+
+      if (!error && typeof data === 'number') {
+        likeCountEl.innerText = data;
+        localStorage.setItem(`likes_count_${slug}`, data);
+      } else {
+        // Fallback to direct upsert
+        const { data: upsertData, error: upsertErr } = await supabase
+          .from('likes')
+          .upsert({ article_id: slug, likes_count: currentCount })
+          .select()
+          .single();
+
+        if (!upsertErr && upsertData && typeof upsertData.likes_count === 'number') {
+          likeCountEl.innerText = upsertData.likes_count;
+          localStorage.setItem(`likes_count_${slug}`, upsertData.likes_count);
+        }
+      }
+    } catch (err) {
+      console.warn('Supabase like sync error:', err.message);
+    }
+  } else if (API_BASE_URL) {
+    // 2. Sync with API Gateway
     try {
       const res = await fetchWithTimeout(
         `${API_BASE_URL}/api/comments/like/${slug}`,
@@ -495,6 +557,33 @@ async function loadComments(slug) {
     renderCommentsList(localComments, slug);
   }
 
+  // 1. Try Supabase
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('comments')
+        .select('*')
+        .eq('article_id', slug)
+        .order('created_at', { ascending: true });
+
+      if (!error && Array.isArray(data)) {
+        const commentMap = new Map();
+        data.forEach((c) => commentMap.set(String(c.id), c));
+        localComments.forEach((c) => {
+          if (!commentMap.has(String(c.id))) commentMap.set(String(c.id), c);
+        });
+        const allComments = Array.from(commentMap.values());
+        allComments.sort((a, b) => new Date(a.created_at || a.createdAt) - new Date(b.created_at || b.createdAt));
+        localStorage.setItem(`comments_${slug}`, JSON.stringify(allComments));
+        renderCommentsList(allComments, slug);
+        return;
+      }
+    } catch (err) {
+      console.warn('Supabase loadComments notice:', err.message);
+    }
+  }
+
+  // 2. Fallback to API Gateway
   if (API_BASE_URL) {
     try {
       const res = await fetchWithTimeout(`${API_BASE_URL}/api/comments/${slug}`, {}, 3000);
@@ -545,7 +634,19 @@ async function deleteComment(commentId, slug) {
     renderCommentsList(localComments, slug);
   }
 
-  if (API_BASE_URL) {
+  // 1. Delete on Supabase if configured
+  if (supabase) {
+    try {
+      const { error } = await supabase.from('comments').delete().eq('id', commentId);
+      if (!error) {
+        localStorage.setItem('blog_admin_key', adminKey);
+        loadComments(slug);
+      }
+    } catch (err) {
+      console.warn('Supabase comment delete notice:', err.message);
+    }
+  } else if (API_BASE_URL) {
+    // 2. Delete on API Gateway
     try {
       const res = await fetchWithTimeout(
         `${API_BASE_URL}/api/comments/${commentId}`,
@@ -793,7 +894,30 @@ async function handleCommentSubmit(e, slug) {
 
   let savedComment = newComment;
 
-  if (API_BASE_URL) {
+  // 1. Try Supabase
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('comments')
+        .insert([
+          {
+            article_id: slug,
+            author_name: authorName,
+            author_email: authorEmail,
+            content: content,
+          },
+        ])
+        .select()
+        .single();
+
+      if (!error && data) {
+        savedComment = data;
+      }
+    } catch (err) {
+      console.warn('Supabase comment insert failed, using local storage:', err.message);
+    }
+  } else if (API_BASE_URL) {
+    // 2. Try API Gateway
     try {
       const res = await fetchWithTimeout(
         `${API_BASE_URL}/api/comments`,
@@ -1526,6 +1650,19 @@ async function incrementAndFetchViews(slug) {
   localStorage.setItem(`views_${slug}`, localViews);
   viewCountEl.innerText = localViews;
 
+  if (supabase) {
+    try {
+      const { data, error } = await supabase.rpc('increment_view', { post_slug: slug });
+      if (!error && typeof data === 'number') {
+        viewCountEl.innerText = data;
+        localStorage.setItem(`views_${slug}`, data);
+        return;
+      }
+    } catch (err) {
+      console.warn('Supabase views notice:', err.message);
+    }
+  }
+
   if (API_BASE_URL) {
     try {
       const res = await fetchWithTimeout(`${API_BASE_URL}/api/comments/views/${slug}`, { method: 'POST' }, 2500);
@@ -1632,26 +1769,45 @@ function setupSubscribeForm(formElement) {
     }
 
     try {
-      const endpoint = API_BASE_URL ? `${API_BASE_URL}/api/subscribers` : '/api/subscribers';
       let respMsg = "You're subscribed! You'll be notified of new posts.";
+      const token = Math.random().toString(36).substring(2) + Date.now().toString(36);
 
-      try {
-        const response = await fetchWithTimeout(
-          endpoint,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email }),
-          },
-          3000
-        );
-
-        const data = await response.json().catch(() => ({}));
-        if (response.ok && data.message) {
-          respMsg = data.message;
+      // 1. Try Supabase
+      if (supabase) {
+        try {
+          const { error } = await supabase.from('subscribers').insert([
+            {
+              email: email,
+              unsubscribe_token: token,
+            },
+          ]);
+          if (error && error.code === '23505') {
+            respMsg = "You're already subscribed! Stay tuned for updates.";
+          }
+        } catch (subErr) {
+          console.warn('Supabase subscription notice, using local cache:', subErr.message);
         }
-      } catch (netErr) {
-        console.warn('Backend subscriber API offline, storing subscription locally:', netErr.message);
+      } else {
+        // 2. Try API Gateway
+        const endpoint = API_BASE_URL ? `${API_BASE_URL}/api/subscribers` : '/api/subscribers';
+        try {
+          const response = await fetchWithTimeout(
+            endpoint,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email }),
+            },
+            3000
+          );
+
+          const data = await response.json().catch(() => ({}));
+          if (response.ok && data.message) {
+            respMsg = data.message;
+          }
+        } catch (netErr) {
+          console.warn('Backend subscriber API offline, storing subscription locally:', netErr.message);
+        }
       }
 
       // Persist locally so user is never blocked or told an error when attempting to subscribe

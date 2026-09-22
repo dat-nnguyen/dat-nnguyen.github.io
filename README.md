@@ -1,43 +1,47 @@
 # Personal Portfolio Website
 
-A personal portfolio and blog with a static frontend deployed to **GitHub Pages** and a containerized Node.js API Gateway backend deployed to **Railway**.
+A personal portfolio and blog with a static frontend deployed to **GitHub Pages** and a serverless database backend powered by **Supabase**.
 
 ## Architecture
 
-- **Frontend**: Vanilla JS + CSS built with Vite, hosted on **GitHub Pages**.
-- **Backend API Gateway**: Express.js service providing `/api/posts`, `/api/about`, `/api/projects`, and `/api/comments`, hosted on **Railway**.
-- **Database (Optional)**: PostgreSQL (provisioned via Railway PostgreSQL plugin) with auto-migrated tables, falling back gracefully to in-memory store if not configured.
+- **Frontend**: Vanilla JS + CSS built with Vite, hosted globally on **GitHub Pages**. Pre-renders all markdown blog posts, projects, and bio content to static JSON.
+- **Database & Realtime (Serverless)**: **Supabase** (PostgreSQL) handling:
+  - Article likes & atomic view counters
+  - Reader comments with moderation
+  - Email subscribers
+- **Automated Publishing & Notifications**: GitHub Actions workflow automatically rebuilds the site on push to `main` and broadcasts emails to subscribers via Resend / Supabase.
+- **Offline / Local Fallback**: Client-side `localStorage` cache ensures likes and comments work instantly even when offline.
 
 ---
 
 ## Local Development
 
-1. **Install root dependencies**:
+1. **Install dependencies**:
+
    ```bash
    npm install
    ```
 
-2. **Start the backend**:
-   ```bash
-   npm start
-   ```
-   Runs the API Gateway on `http://localhost:5050`.
+2. **Start the frontend dev server**:
 
-3. **Start the frontend dev server**:
    ```bash
    npm run dev
    ```
-   Runs Vite dev server with proxy to `http://localhost:5050`.
+
+   Runs Vite dev server on `http://localhost:5173`.
 
 ---
 
-## Deploying Backend to Railway
+## Setting Up Supabase (100% Free & Serverless)
 
-1. Go to [Railway](https://railway.app) and create a **New Project**.
-2. Select **Deploy from GitHub repo** and pick this repository.
-3. Railway automatically detects `railway.json` and runs `npm start`.
-4. *(Optional Database)* Click **+ New** > **Database** > **Add PostgreSQL**. Railway will automatically link `DATABASE_URL` to your backend service.
-5. In your Railway service settings under **Networking**, click **Generate Domain** (e.g. `https://personal-website-production.up.railway.app`).
-6. Copy your public domain and configure it for the frontend:
-   - In GitHub repository settings: **Settings** > **Secrets and variables** > **Actions** > add `VITE_API_BASE_URL` with your Railway URL.
-   - Or update `.env.production` before building.
+1. Create a free project at [supabase.com](https://supabase.com).
+2. Go to the **SQL Editor** in your Supabase project dashboard.
+3. Open and run the migration script: [`supabase/schema.sql`](supabase/schema.sql).
+4. Retrieve your **Project URL** and **Anon Key** from:
+   **Project Settings** > **API**.
+5. Add the secrets to your GitHub repository:
+   - In GitHub > **Settings** > **Secrets and variables** > **Actions**:
+     - `VITE_SUPABASE_URL`: Your Supabase Project URL (`https://your-project.supabase.co`)
+     - `VITE_SUPABASE_ANON_KEY`: Your Supabase public `anon` key
+     - `RESEND_API_KEY`: *(Optional)* Your Resend API key for subscriber emails
+6. Done! No server containers, no sleeping dynos, zero hosting costs.
