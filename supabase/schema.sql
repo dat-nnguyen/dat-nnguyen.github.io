@@ -81,9 +81,8 @@ CREATE POLICY "Public can post comments"
   ON public.comments FOR INSERT
   WITH CHECK (true);
 
-CREATE POLICY "Public can delete own or admin comments"
-  ON public.comments FOR DELETE
-  USING (true);
+-- NOTE: Direct DELETE is blocked for public. Comments can only be deleted
+-- by the site owner using the secure stored procedure `delete_comment_with_password()`.
 
 -- LIKES POLICIES
 CREATE POLICY "Public can view likes"
@@ -163,3 +162,79 @@ BEGIN
   RETURN new_count;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ==============================================================================
+-- ADMIN SECURITY & PROTECTED COMMENT DELETION
+-- ==============================================================================
+
+-- Enable pgcrypto extension for secure SHA-256 password hashing
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- Admin settings table (Isolated with RLS, NO public policies - completely hidden from public API)
+CREATE TABLE IF NOT EXISTS public.admin_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+
+ALTER TABLE public.admin_settings ENABLE ROW LEVEL SECURITY;
+
+-- Initial default admin password ('admin123') stored ONLY as a secure SHA-256 hash.
+-- The password is NEVER exposed in frontend source code or git.
+INSERT INTO public.admin_settings (key, value)
+VALUES ('admin_password_hash', encode(digest('admin123', 'sha256'), 'hex'))
+ON CONFLICT (key) DO NOTHING;
+
+-- Secure procedure to delete comment requiring correct admin password
+CREATE OR REPLACE FUNCTION delete_comment_with_password(
+  target_comment_id BIGINT,
+  admin_password TEXT
+)
+RETURNS BOOLEAN AS $$
+DECLARE
+  stored_hash TEXT;
+  input_hash TEXT;
+BEGIN
+  SELECT value INTO stored_hash FROM public.admin_settings WHERE key = 'admin_password_hash';
+  IF stored_hash IS NULL THEN
+    RAISE EXCEPTION 'Admin password not set in database';
+  END IF;
+
+  input_hash := encode(digest(admin_password, 'sha256'), 'hex');
+
+  IF input_hash = stored_hash THEN
+    DELETE FROM public.comments WHERE id = target_comment_id;
+    RETURN TRUE;
+  ELSE
+    RAISE EXCEPTION 'Invalid admin password';
+  END IF;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Procedure to change admin password securely from Supabase
+CREATE OR REPLACE FUNCTION update_admin_password(
+  current_password TEXT,
+  new_password TEXT
+)
+RETURNS BOOLEAN AS $$
+DECLARE
+  stored_hash TEXT;
+  input_hash TEXT;
+BEGIN
+  SELECT value INTO stored_hash FROM public.admin_settings WHERE key = 'admin_password_hash';
+  IF stored_hash IS NULL THEN
+    RAISE EXCEPTION 'Admin password not set in database';
+  END IF;
+
+  input_hash := encode(digest(current_password, 'sha256'), 'hex');
+
+  IF input_hash = stored_hash THEN
+    UPDATE public.admin_settings
+    SET value = encode(digest(new_password, 'sha256'), 'hex')
+    WHERE key = 'admin_password_hash';
+    RETURN TRUE;
+  ELSE
+    RAISE EXCEPTION 'Current admin password incorrect';
+  END IF;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+

@@ -612,38 +612,35 @@ async function loadComments(slug) {
 }
 
 async function deleteComment(commentId, slug) {
-  let adminKey = localStorage.getItem('blog_admin_key');
+  let adminPassword = sessionStorage.getItem('blog_admin_password');
 
-  if (!adminKey) {
-    adminKey = prompt('🔒 Admin Access Required\nPlease enter the Admin Passkey to delete this comment:');
-    if (!adminKey) return; // User cancelled prompt
+  if (!adminPassword) {
+    adminPassword = prompt('🔒 Admin Access Required\nPlease enter the Admin Password to delete this comment:');
+    if (!adminPassword) return; // User cancelled prompt
   }
 
   if (!confirm('Are you sure you want to delete this comment?')) return;
 
-  // Check if comment exists in local storage
-  let localComments = [];
-  try {
-    localComments = JSON.parse(localStorage.getItem(`comments_${slug}`)) || [];
-  } catch (e) {}
-
-  const isLocal = localComments.some((c) => String(c.id) === String(commentId));
-  if (isLocal) {
-    localComments = localComments.filter((c) => String(c.id) !== String(commentId));
-    localStorage.setItem(`comments_${slug}`, JSON.stringify(localComments));
-    renderCommentsList(localComments, slug);
-  }
-
-  // 1. Delete on Supabase if configured
+  // 1. Delete on Supabase using secure RPC with password verification
   if (supabase) {
     try {
-      const { error } = await supabase.from('comments').delete().eq('id', commentId);
-      if (!error) {
-        localStorage.setItem('blog_admin_key', adminKey);
-        loadComments(slug);
+      const { data, error } = await supabase.rpc('delete_comment_with_password', {
+        target_comment_id: commentId,
+        admin_password: adminPassword,
+      });
+
+      if (error || data !== true) {
+        sessionStorage.removeItem('blog_admin_password');
+        alert('❌ Invalid Admin Password. Access denied.');
+        return;
       }
+
+      // Password was correct, remember for this browser session
+      sessionStorage.setItem('blog_admin_password', adminPassword);
     } catch (err) {
-      console.warn('Supabase comment delete notice:', err.message);
+      sessionStorage.removeItem('blog_admin_password');
+      alert(`❌ Invalid Admin Password: ${err.message || 'Access denied.'}`);
+      return;
     }
   } else if (API_BASE_URL) {
     // 2. Delete on API Gateway
@@ -653,26 +650,34 @@ async function deleteComment(commentId, slug) {
         {
           method: 'DELETE',
           headers: {
-            'x-admin-key': adminKey,
+            'x-admin-key': adminPassword,
           },
         },
         3000
       );
 
       if (res.ok) {
-        localStorage.setItem('blog_admin_key', adminKey);
-        loadComments(slug);
+        sessionStorage.setItem('blog_admin_password', adminPassword);
       } else if (res.status === 403 || res.status === 401) {
-        localStorage.removeItem('blog_admin_key');
-        alert('❌ Invalid Admin Passkey. Access denied.');
+        sessionStorage.removeItem('blog_admin_password');
+        alert('❌ Invalid Admin Password. Access denied.');
         return;
       }
     } catch (err) {
-      console.warn('Backend comment delete unavailable, removed from local cache:', err.message);
+      sessionStorage.removeItem('blog_admin_password');
+      alert('❌ Failed to authenticate admin password.');
+      return;
     }
   }
 
-  localStorage.setItem('blog_admin_key', adminKey);
+  // Remove from local storage cache only if authenticated
+  let localComments = [];
+  try {
+    localComments = JSON.parse(localStorage.getItem(`comments_${slug}`)) || [];
+    localComments = localComments.filter((c) => String(c.id) !== String(commentId));
+    localStorage.setItem(`comments_${slug}`, JSON.stringify(localComments));
+  } catch (e) {}
+
   const commentEl = document.getElementById(`comment-${commentId}`);
   if (commentEl) {
     commentEl.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
