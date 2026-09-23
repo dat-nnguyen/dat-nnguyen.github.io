@@ -1,11 +1,11 @@
 const express = require('express');
-const router = express.Router();
 
 // Pure in-memory storage (ephemeral — fallback when PostgreSQL is not connected)
 let inMemoryComments = [];
 let inMemoryLikes = {};
 
 module.exports = (pool) => {
+  const router = express.Router();
   // GET storage status (to help verify whether data is saved in PostgreSQL or In-Memory)
   router.get('/storage/status', async (req, res) => {
     let pgConnected = false;

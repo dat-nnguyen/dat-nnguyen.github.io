@@ -116,9 +116,11 @@ app.use((err, req, res, next) => {
   res.status(status).json({ error: err.message || 'Internal Server Error' });
 });
 
-app.listen(PORT, HOST, () => {
-  console.log(`🚀 API Gateway is running on http://${HOST}:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, HOST, () => {
+    console.log(`🚀 API Gateway is running on http://${HOST}:${PORT}`);
+  });
+}
 
 module.exports = app;
 

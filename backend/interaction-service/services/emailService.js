@@ -365,4 +365,5 @@ module.exports = {
   renderNewPostEmail,
   renderWelcomeEmail,
   renderUnsubscribePage,
+  escapeHtml,
 };

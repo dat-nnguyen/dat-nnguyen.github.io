@@ -14,9 +14,11 @@ const pool = new Pool({
 });
 
 // testing connection to database
-pool.connect()
-  .then(() =>{ console.log('Connected successfully to PostgreSQL database'); })
-  .catch(err => console.log(err))
+if (require.main === module) {
+  pool.connect()
+    .then(() =>{ console.log('Connected successfully to PostgreSQL database'); })
+    .catch(err => console.log(err));
+}
 
 // Init table
 const initDb = async () => {
@@ -51,10 +53,6 @@ const initDb = async () => {
   }
 };
 
-initDb()
-  .then(() => console.log('Database initialization complete.'))
-  .catch(err => console.error('Database initialization failed:', err));
-
 const commentsRoutes = require('./routes/commentsRoutes')(pool);
 const subscribersRoutes = require('./routes/subscribersRoutes')(pool);
 app.use('/api/comments', commentsRoutes);
@@ -64,4 +62,12 @@ app.get('/api/test', (req, res) => {
   res.json({ message: 'Hello from the interaction service!' });
 });
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+if (require.main === module) {
+  initDb()
+    .then(() => console.log('Database initialization complete.'))
+    .catch(err => console.error('Database initialization failed:', err));
+
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+}
+
+module.exports = { app, pool, initDb };

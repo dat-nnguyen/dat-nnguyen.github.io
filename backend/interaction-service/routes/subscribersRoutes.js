@@ -1,5 +1,4 @@
 const express = require('express');
-const router = express.Router();
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -178,6 +177,7 @@ function getLatestPostDetails() {
 }
 
 module.exports = (pool) => {
+  const router = express.Router();
   // 1. Subscribe with email
   router.post('/', async (req, res) => {
     try {
@@ -486,4 +486,14 @@ module.exports = (pool) => {
   });
 
   return router;
+};
+
+module.exports._helpers = {
+  getSiteUrl,
+  getApiBaseUrl,
+  getPostsDirectory,
+  getPostDetailsBySlug,
+  getLatestPostDetails,
+  saveSubscribersBackup,
+  saveSentNotificationsBackup,
 };

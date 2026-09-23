@@ -80,4 +80,11 @@ function generateStaticContent() {
   }
 }
 
-generateStaticContent();
+if (require.main === module) {
+  generateStaticContent();
+}
+
+module.exports = {
+  generateStaticContent,
+  calculateReadingTime,
+};

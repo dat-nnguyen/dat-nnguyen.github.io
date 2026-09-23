@@ -223,4 +223,13 @@ async function runNotification() {
   console.log('------------------------------------------------------------');
 }
 
-runNotification();
+if (require.main === module) {
+  runNotification();
+}
+
+module.exports = {
+  getLatestPost,
+  notifyViaSupabase,
+  notifyViaApi,
+  runNotification,
+};

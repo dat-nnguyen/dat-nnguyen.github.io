@@ -14,5 +14,9 @@ app.use('/api/posts', postRoutes);
 app.use('/api/about', aboutRoutes);
 app.use('/api/projects', projectRoutes);
 
-const PORT = 5001;
-app.listen(PORT, () => console.log(`Content Service running on port ${PORT}`));
+const PORT = process.env.PORT || 5001;
+if (require.main === module) {
+  app.listen(PORT, () => console.log(`Content Service running on port ${PORT}`));
+}
+
+module.exports = app;
