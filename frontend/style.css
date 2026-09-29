@@ -1172,12 +1172,27 @@ a:hover {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 5px 12px;
+    padding: 6px 14px;
     background-color: var(--tag-bg);
     border: 1px solid var(--border-color);
     border-radius: 20px;
     font-size: 0.82rem;
     color: var(--text-secondary);
+}
+
+.session-active-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background-color: #4cd964;
+    box-shadow: 0 0 6px rgba(76, 217, 100, 0.6);
+    flex-shrink: 0;
+}
+
+.session-email-label, .reply-session-email {
+    color: var(--text-muted);
+    font-size: 0.78rem;
 }
 
 .session-badge strong {
@@ -1191,13 +1206,31 @@ a:hover {
     cursor: pointer;
     font-size: 0.8rem;
     font-weight: 600;
-    padding: 0;
+    padding: 0 2px;
+    margin-left: 4px;
     text-decoration: underline;
     transition: color 0.15s ease;
 }
 
 .session-switch-btn:hover {
     color: var(--accent-hover);
+}
+
+.reply-session-banner {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 12px;
+    margin-bottom: 12px;
+    background-color: var(--bg-canvas);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+
+.reply-session-banner strong {
+    color: var(--text-primary);
 }
 
 .comment-reply-btn {

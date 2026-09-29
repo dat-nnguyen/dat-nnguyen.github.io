@@ -95,6 +95,16 @@ describe('Comments Routes & Interaction Service', () => {
       });
       expect(res.status).toBe(400);
       expect(res.body).toEqual({ error: 'All fields are required' });
+
+      // Whitespace only
+      const resWhitespace = await request(app).post('/api/comments').send({
+        articleId: 'test',
+        authorName: '   ',
+        authorEmail: '   ',
+        content: '   ',
+      });
+      expect(resWhitespace.status).toBe(400);
+      expect(resWhitespace.body).toEqual({ error: 'All fields are required' });
     });
 
     it('POST /api/comments should insert new comment in database', async () => {

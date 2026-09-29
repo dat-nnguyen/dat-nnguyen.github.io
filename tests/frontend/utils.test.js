@@ -13,6 +13,7 @@ import {
   getCommenterSession,
   saveCommenterSession,
   clearCommenterSession,
+  hasCommenterSession,
 } from '../../frontend/utils.js';
 
 describe('Frontend Utilities (utils.js)', () => {
@@ -231,10 +232,16 @@ describe('Frontend Utilities (utils.js)', () => {
       // Clear
       clearCommenterSession(mockStorage);
       expect(getCommenterSession(mockStorage)).toEqual({ name: '', email: '' });
+      expect(hasCommenterSession(mockStorage)).toBe(false);
+
+      // Has session when both name and email are present
+      saveCommenterSession('Alice', 'alice@test.com', mockStorage);
+      expect(hasCommenterSession(mockStorage)).toBe(true);
     });
 
     it('should handle missing storage, empty strings, or exceptions gracefully', () => {
       expect(getCommenterSession(null)).toEqual({ name: '', email: '' });
+      expect(hasCommenterSession(null)).toBe(false);
       expect(() => saveCommenterSession('Test', 'test@test.com', null)).not.toThrow();
       expect(() => saveCommenterSession('', '   ', null)).not.toThrow();
       expect(() => clearCommenterSession(null)).not.toThrow();
@@ -246,6 +253,7 @@ describe('Frontend Utilities (utils.js)', () => {
       };
 
       expect(getCommenterSession(throwingStorage)).toEqual({ name: '', email: '' });
+      expect(hasCommenterSession(throwingStorage)).toBe(false);
       expect(() => saveCommenterSession('Alice', 'alice@test.com', throwingStorage)).not.toThrow();
       expect(() => clearCommenterSession(throwingStorage)).not.toThrow();
     });

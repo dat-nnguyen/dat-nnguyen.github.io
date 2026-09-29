@@ -328,8 +328,8 @@ export function getCommenterSession(storage = null) {
     const s = storage || (typeof window !== 'undefined' ? window.localStorage : null);
     if (!s) return { name: '', email: '' };
     return {
-      name: s.getItem('commenter_name') || '',
-      email: s.getItem('commenter_email') || '',
+      name: (s.getItem('commenter_name') || '').trim(),
+      email: (s.getItem('commenter_email') || '').trim(),
     };
   } catch (e) {
     return { name: '', email: '' };
@@ -338,6 +338,7 @@ export function getCommenterSession(storage = null) {
 
 /**
  * Saves commenter profile (name, email) into localStorage for long-term session persistence.
+ * Enforces one account per session.
  */
 export function saveCommenterSession(name, email, storage = null) {
   try {
@@ -363,4 +364,13 @@ export function clearCommenterSession(storage = null) {
     s.removeItem('commenter_email');
   } catch (e) {}
 }
+
+/**
+ * Checks whether an active commenter account exists for this session.
+ */
+export function hasCommenterSession(storage = null) {
+  const session = getCommenterSession(storage);
+  return Boolean(session.name && session.email);
+}
+
 

@@ -107,6 +107,14 @@ module.exports = (pool) => {
         return res.status(400).json({ error: 'All fields are required' });
       }
 
+      const trimmedName = String(authorName).trim();
+      const trimmedEmail = String(authorEmail).trim().toLowerCase();
+      const trimmedContent = String(content).trim();
+
+      if (!trimmedName || !trimmedEmail || !trimmedContent) {
+        return res.status(400).json({ error: 'All fields are required' });
+      }
+
       const parsedParentId = effectiveParentId
         ? (isNaN(effectiveParentId) ? null : parseInt(effectiveParentId, 10))
         : null;
@@ -120,9 +128,9 @@ module.exports = (pool) => {
         `;
         const result = await pool.query(insertQuery, [
           articleId,
-          authorName,
-          authorEmail,
-          content,
+          trimmedName,
+          trimmedEmail,
+          trimmedContent,
           parsedParentId,
         ]);
         const row = result.rows[0];
@@ -146,9 +154,9 @@ module.exports = (pool) => {
       const newComment = {
         id: Date.now(),
         article_id: articleId,
-        author_name: authorName,
-        author_email: authorEmail,
-        content: content,
+        author_name: trimmedName,
+        author_email: trimmedEmail,
+        content: trimmedContent,
         parent_id: parsedParentId !== null ? parsedParentId : (effectiveParentId ? effectiveParentId : null),
         created_at: new Date().toISOString(),
       };

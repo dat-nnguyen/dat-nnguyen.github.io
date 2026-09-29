@@ -12,6 +12,7 @@ import {
   getCommenterSession,
   saveCommenterSession,
   clearCommenterSession,
+  hasCommenterSession,
 } from './utils.js';
 
 // 1. Coffee Button Modal Logic
@@ -306,7 +307,7 @@ async function openPost(slug) {
         <form id="comment-form" class="comment-form">
           <h4 class="form-title">Leave a Comment</h4>
           <div id="comment-session-indicator" class="comment-session-indicator"></div>
-          <div class="form-row">
+          <div id="comment-account-fields" class="form-row">
             <input type="text" id="comment-author" placeholder="Your Name" required class="form-input" autocomplete="name" />
             <input type="email" id="comment-email" placeholder="Your Email" required class="form-input" autocomplete="email" />
           </div>
@@ -538,6 +539,7 @@ function toggleReplyForm(targetCommentId, slug, targetAuthorName) {
   activeReplyCommentId = String(targetCommentId);
 
   const session = getCommenterSession();
+  const hasSession = Boolean(session.name && session.email);
 
   slot.innerHTML = `
     <form class="inline-reply-form" id="reply-form-${targetCommentId}">
@@ -545,10 +547,17 @@ function toggleReplyForm(targetCommentId, slug, targetAuthorName) {
         <span class="replying-to-label">Replying to <strong>@${escapeHtml(targetAuthorName)}</strong></span>
         <button type="button" class="reply-close-btn" onclick="window.closeReplyForm()" title="Cancel reply" aria-label="Close reply form">✕</button>
       </div>
-      <div class="form-row">
-        <input type="text" id="reply-author-${targetCommentId}" placeholder="Your Name" required class="form-input" value="${escapeHtml(session.name)}" autocomplete="name" />
-        <input type="email" id="reply-email-${targetCommentId}" placeholder="Your Email" required class="form-input" value="${escapeHtml(session.email)}" autocomplete="email" />
-      </div>
+      ${hasSession ? `
+        <div class="reply-session-banner">
+          <span class="session-active-dot"></span>
+          <span>Replying as <strong>${escapeHtml(session.name)}</strong> <span class="reply-session-email">(${escapeHtml(session.email)})</span></span>
+        </div>
+      ` : `
+        <div class="form-row" id="reply-account-row-${targetCommentId}">
+          <input type="text" id="reply-author-${targetCommentId}" placeholder="Your Name" required class="form-input" autocomplete="name" />
+          <input type="email" id="reply-email-${targetCommentId}" placeholder="Your Email" required class="form-input" autocomplete="email" />
+        </div>
+      `}
       <textarea id="reply-content-${targetCommentId}" placeholder="Write your reply to @${escapeHtml(targetAuthorName)}..." required class="form-textarea" rows="3"></textarea>
       <div class="reply-form-actions">
         <button type="submit" class="reply-submit-btn">Post Reply</button>
@@ -558,29 +567,15 @@ function toggleReplyForm(targetCommentId, slug, targetAuthorName) {
     </form>
   `;
 
-  const authorInput = document.getElementById(`reply-author-${targetCommentId}`);
-  const emailInput = document.getElementById(`reply-email-${targetCommentId}`);
   const contentInput = document.getElementById(`reply-content-${targetCommentId}`);
   const form = document.getElementById(`reply-form-${targetCommentId}`);
-
-  if (authorInput) {
-    authorInput.addEventListener('input', () => {
-      saveCommenterSession(authorInput.value, emailInput ? emailInput.value : '');
-      updateSessionBadge();
-    });
-  }
-  if (emailInput) {
-    emailInput.addEventListener('input', () => {
-      saveCommenterSession(authorInput ? authorInput.value : '', emailInput.value);
-      updateSessionBadge();
-    });
-  }
+  const authorInput = document.getElementById(`reply-author-${targetCommentId}`);
 
   if (form) {
     form.addEventListener('submit', (e) => handleReplySubmit(e, targetCommentId, slug));
   }
 
-  if (session.name && session.email && contentInput) {
+  if (hasSession && contentInput) {
     contentInput.focus();
   } else if (authorInput) {
     authorInput.focus();
@@ -591,21 +586,32 @@ window.toggleReplyForm = toggleReplyForm;
 async function handleReplySubmit(e, parentId, slug) {
   e.preventDefault();
 
-  const authorInput = document.getElementById(`reply-author-${parentId}`);
-  const emailInput = document.getElementById(`reply-email-${parentId}`);
   const contentInput = document.getElementById(`reply-content-${parentId}`);
   const statusEl = document.getElementById(`reply-form-status-${parentId}`);
+  const content = contentInput ? contentInput.value.trim() : '';
 
-  if (!authorInput || !emailInput || !contentInput) return;
+  const session = getCommenterSession();
+  let authorName = session.name;
+  let authorEmail = session.email;
 
-  const authorName = authorInput.value.trim();
-  const authorEmail = emailInput.value.trim();
-  const content = contentInput.value.trim();
+  if (!authorName || !authorEmail) {
+    const authorInput = document.getElementById(`reply-author-${parentId}`);
+    const emailInput = document.getElementById(`reply-email-${parentId}`);
+    authorName = authorInput ? authorInput.value.trim() : '';
+    authorEmail = emailInput ? emailInput.value.trim() : '';
+  }
 
-  if (!authorName || !authorEmail || !content) return;
+  if (!authorName || !authorEmail || !content) {
+    if (statusEl) {
+      statusEl.innerText = 'Please provide your name, email, and reply content.';
+      statusEl.style.color = '#ff6b6b';
+    }
+    return;
+  }
 
+  // Enforce 1 account per session: save and lock to this session
   saveCommenterSession(authorName, authorEmail);
-  updateSessionBadge();
+  setupCommentSessionForm();
 
   if (statusEl) {
     statusEl.innerText = 'Posting reply...';
@@ -703,27 +709,34 @@ window.handleReplySubmit = handleReplySubmit;
 function setupCommentSessionForm() {
   const authorInput = document.getElementById('comment-author');
   const emailInput = document.getElementById('comment-email');
-  if (!authorInput || !emailInput) return;
-
+  const accountFields = document.getElementById('comment-account-fields');
   const session = getCommenterSession();
-  if (session.name && !authorInput.value) {
-    authorInput.value = session.name;
-  }
-  if (session.email && !emailInput.value) {
-    emailInput.value = session.email;
+
+  if (session.name && session.email) {
+    if (authorInput) {
+      authorInput.value = session.name;
+      authorInput.removeAttribute('required');
+    }
+    if (emailInput) {
+      emailInput.value = session.email;
+      emailInput.removeAttribute('required');
+    }
+    if (accountFields) {
+      accountFields.style.display = 'none';
+    }
+  } else {
+    if (accountFields) {
+      accountFields.style.display = '';
+    }
+    if (authorInput) {
+      authorInput.setAttribute('required', 'required');
+    }
+    if (emailInput) {
+      emailInput.setAttribute('required', 'required');
+    }
   }
 
   updateSessionBadge();
-
-  authorInput.addEventListener('input', () => {
-    saveCommenterSession(authorInput.value, emailInput.value);
-    updateSessionBadge();
-  });
-
-  emailInput.addEventListener('input', () => {
-    saveCommenterSession(authorInput.value, emailInput.value);
-    updateSessionBadge();
-  });
 }
 
 function updateSessionBadge() {
@@ -734,8 +747,9 @@ function updateSessionBadge() {
   if (session.name && session.email) {
     indicator.innerHTML = `
       <div class="session-badge">
-        <span>Logged in as <strong>${escapeHtml(session.name)}</strong> (${escapeHtml(session.email)})</span>
-        <button type="button" class="session-switch-btn" onclick="window.clearCommenterSession()">Switch</button>
+        <span class="session-active-dot" title="Active Account"></span>
+        <span>Posting as <strong>${escapeHtml(session.name)}</strong> <span class="session-email-label">(${escapeHtml(session.email)})</span></span>
+        <button type="button" class="session-switch-btn" onclick="window.clearCommenterSession()" title="Sign out / Switch to another account">Switch Account</button>
       </div>
     `;
   } else {
@@ -745,16 +759,19 @@ function updateSessionBadge() {
 
 function clearSessionHandler() {
   clearCommenterSession();
+  setupCommentSessionForm();
   const authorInput = document.getElementById('comment-author');
-  const emailInput = document.getElementById('comment-email');
   if (authorInput) {
     authorInput.value = '';
     authorInput.focus();
   }
+  const emailInput = document.getElementById('comment-email');
   if (emailInput) {
     emailInput.value = '';
   }
-  updateSessionBadge();
+  if (activeReplyCommentId) {
+    closeReplyForm();
+  }
 }
 window.clearCommenterSession = clearSessionHandler;
 
@@ -1021,15 +1038,29 @@ async function handleCommentSubmit(e, slug) {
   const contentInput = document.getElementById('comment-content');
   const statusEl = document.getElementById('comment-form-status');
 
-  const authorName = authorInput.value.trim();
-  const authorEmail = emailInput.value.trim();
-  const content = contentInput.value.trim();
+  const content = contentInput ? contentInput.value.trim() : '';
+  if (!content) return;
 
-  if (!authorName || !authorEmail || !content) return;
+  const session = getCommenterSession();
+  let authorName = session.name;
+  let authorEmail = session.email;
 
-  // Persist session long-term in localStorage
+  if (!authorName || !authorEmail) {
+    authorName = authorInput ? authorInput.value.trim() : '';
+    authorEmail = emailInput ? emailInput.value.trim() : '';
+  }
+
+  if (!authorName || !authorEmail) {
+    if (statusEl) {
+      statusEl.innerText = 'Please provide both your name and email.';
+      statusEl.style.color = '#ff6b6b';
+    }
+    return;
+  }
+
+  // Persist session long-term in localStorage (1 account per session)
   saveCommenterSession(authorName, authorEmail);
-  updateSessionBadge();
+  setupCommentSessionForm();
 
   statusEl.innerText = 'Submitting comment...';
   statusEl.style.color = 'var(--text-secondary)';
