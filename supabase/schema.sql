@@ -10,11 +10,16 @@ CREATE TABLE IF NOT EXISTS public.comments (
   author_name VARCHAR(100) NOT NULL,
   author_email VARCHAR(255) NOT NULL,
   content TEXT NOT NULL,
+  parent_id BIGINT REFERENCES public.comments(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Index comments by article for instant retrieval
+-- Migration for existing comments table
+ALTER TABLE public.comments ADD COLUMN IF NOT EXISTS parent_id BIGINT REFERENCES public.comments(id) ON DELETE CASCADE;
+
+-- Index comments by article and parent for instant retrieval
 CREATE INDEX IF NOT EXISTS idx_comments_article_id ON public.comments(article_id);
+CREATE INDEX IF NOT EXISTS idx_comments_parent_id ON public.comments(parent_id);
 CREATE INDEX IF NOT EXISTS idx_comments_created_at ON public.comments(created_at);
 
 -- 2. LIKES TABLE

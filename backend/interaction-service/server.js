@@ -29,8 +29,10 @@ const initDb = async () => {
             author_name VARCHAR(100) NOT NULL,
             author_email VARCHAR(255) NOT NULL,
             content TEXT NOT NULL,
+            parent_id INT REFERENCES comments(id) ON DELETE CASCADE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
+        ALTER TABLE comments ADD COLUMN IF NOT EXISTS parent_id INT REFERENCES comments(id) ON DELETE CASCADE;
         CREATE TABLE IF NOT EXISTS subscribers (
             id SERIAL PRIMARY KEY,
             email VARCHAR(255) UNIQUE NOT NULL,

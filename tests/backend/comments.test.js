@@ -120,6 +120,32 @@ describe('Comments Routes & Interaction Service', () => {
       expect(res.body).toEqual(mockCreated);
     });
 
+    it('POST /api/comments with parentId should insert reply linked to parent in database', async () => {
+      const mockReply = {
+        id: 2,
+        article_id: 'post-1',
+        author_name: 'Bob',
+        author_email: 'bob@example.com',
+        content: 'I agree with Alice!',
+        parent_id: 1,
+        created_at: new Date().toISOString(),
+      };
+      mockPool.query.mockResolvedValueOnce({
+        rows: [mockReply],
+      });
+
+      const res = await request(app).post('/api/comments').send({
+        articleId: 'post-1',
+        authorName: 'Bob',
+        authorEmail: 'bob@example.com',
+        content: 'I agree with Alice!',
+        parentId: 1,
+      });
+      expect(res.status).toBe(201);
+      expect(res.body).toEqual(mockReply);
+      expect(res.body.parent_id).toBe(1);
+    });
+
     it('GET /api/comments/:articleId should return comments from database', async () => {
       const mockRows = [
         { id: 2, article_id: 'post-1', content: 'Second' },
@@ -280,6 +306,51 @@ describe('Comments Routes & Interaction Service', () => {
         .set('x-admin-key', 'test-admin');
       expect(notFoundRes.status).toBe(404);
       expect(notFoundRes.body).toEqual({ error: 'Comment not found' });
+
+      delete process.env.ADMIN_KEY;
+    });
+
+    it('POST & DELETE /api/comments in in-memory mode should support replies and cascade delete child replies', async () => {
+      process.env.ADMIN_KEY = 'cascade-admin';
+      const slug = `mem-reply-${Date.now()}`;
+
+      // 1. Post parent comment
+      const parentRes = await request(app).post('/api/comments').send({
+        articleId: slug,
+        authorName: 'Parent Author',
+        authorEmail: 'parent@example.com',
+        content: 'Root comment',
+      });
+      expect(parentRes.status).toBe(201);
+      const parentId = parentRes.body.id;
+
+      // 2. Post reply
+      const replyRes = await request(app).post('/api/comments').send({
+        articleId: slug,
+        authorName: 'Reply Author',
+        authorEmail: 'reply@example.com',
+        content: 'This is a reply',
+        parentId,
+      });
+      expect(replyRes.status).toBe(201);
+      expect(replyRes.body.parent_id).toBe(parentId);
+      const replyId = replyRes.body.id;
+
+      // 3. Verify both comments exist
+      const listRes1 = await request(app).get(`/api/comments/${slug}`);
+      expect(listRes1.body.some((c) => c.id === parentId)).toBe(true);
+      expect(listRes1.body.some((c) => c.id === replyId)).toBe(true);
+
+      // 4. Delete parent comment -> child reply should cascade delete
+      const delRes = await request(app)
+        .delete(`/api/comments/${parentId}`)
+        .set('x-admin-key', 'cascade-admin');
+      expect(delRes.status).toBe(200);
+
+      // 5. Verify both parent and reply are gone
+      const listRes2 = await request(app).get(`/api/comments/${slug}`);
+      expect(listRes2.body.some((c) => c.id === parentId)).toBe(false);
+      expect(listRes2.body.some((c) => c.id === replyId)).toBe(false);
 
       delete process.env.ADMIN_KEY;
     });

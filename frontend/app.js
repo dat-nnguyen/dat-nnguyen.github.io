@@ -8,6 +8,10 @@ import {
   getGravatarUrl,
   getAvatarUrl,
   showToast,
+  organizeCommentThreads,
+  getCommenterSession,
+  saveCommenterSession,
+  clearCommenterSession,
 } from './utils.js';
 
 // 1. Coffee Button Modal Logic
@@ -301,9 +305,10 @@ async function openPost(slug) {
         
         <form id="comment-form" class="comment-form">
           <h4 class="form-title">Leave a Comment</h4>
+          <div id="comment-session-indicator" class="comment-session-indicator"></div>
           <div class="form-row">
-            <input type="text" id="comment-author" placeholder="Your Name" required class="form-input" />
-            <input type="email" id="comment-email" placeholder="Your Email" required class="form-input" />
+            <input type="text" id="comment-author" placeholder="Your Name" required class="form-input" autocomplete="name" />
+            <input type="email" id="comment-email" placeholder="Your Email" required class="form-input" autocomplete="email" />
           </div>
           <textarea id="comment-content" placeholder="Write your thoughts..." required class="form-textarea" rows="4"></textarea>
           <button type="submit" class="comment-submit-btn">Submit Comment</button>
@@ -337,6 +342,7 @@ async function openPost(slug) {
     const commentForm = document.getElementById('comment-form');
     if (commentForm) {
       commentForm.addEventListener('submit', (e) => handleCommentSubmit(e, slug));
+      setupCommentSessionForm();
     }
 
     loadComments(slug);
@@ -508,6 +514,250 @@ function attachCopyButtons() {
 }
 
 
+let activeReplyCommentId = null;
+
+function closeReplyForm() {
+  if (activeReplyCommentId) {
+    const slot = document.getElementById(`reply-form-slot-${activeReplyCommentId}`);
+    if (slot) slot.innerHTML = '';
+    activeReplyCommentId = null;
+  }
+}
+window.closeReplyForm = closeReplyForm;
+
+function toggleReplyForm(targetCommentId, slug, targetAuthorName) {
+  const slot = document.getElementById(`reply-form-slot-${targetCommentId}`);
+  if (!slot) return;
+
+  if (activeReplyCommentId === String(targetCommentId)) {
+    closeReplyForm();
+    return;
+  }
+
+  closeReplyForm();
+  activeReplyCommentId = String(targetCommentId);
+
+  const session = getCommenterSession();
+
+  slot.innerHTML = `
+    <form class="inline-reply-form" id="reply-form-${targetCommentId}">
+      <div class="reply-form-header">
+        <span class="replying-to-label">Replying to <strong>@${escapeHtml(targetAuthorName)}</strong></span>
+        <button type="button" class="reply-close-btn" onclick="window.closeReplyForm()" title="Cancel reply" aria-label="Close reply form">✕</button>
+      </div>
+      <div class="form-row">
+        <input type="text" id="reply-author-${targetCommentId}" placeholder="Your Name" required class="form-input" value="${escapeHtml(session.name)}" autocomplete="name" />
+        <input type="email" id="reply-email-${targetCommentId}" placeholder="Your Email" required class="form-input" value="${escapeHtml(session.email)}" autocomplete="email" />
+      </div>
+      <textarea id="reply-content-${targetCommentId}" placeholder="Write your reply to @${escapeHtml(targetAuthorName)}..." required class="form-textarea" rows="3"></textarea>
+      <div class="reply-form-actions">
+        <button type="submit" class="reply-submit-btn">Post Reply</button>
+        <button type="button" class="reply-cancel-btn" onclick="window.closeReplyForm()">Cancel</button>
+      </div>
+      <p id="reply-form-status-${targetCommentId}" class="form-status"></p>
+    </form>
+  `;
+
+  const authorInput = document.getElementById(`reply-author-${targetCommentId}`);
+  const emailInput = document.getElementById(`reply-email-${targetCommentId}`);
+  const contentInput = document.getElementById(`reply-content-${targetCommentId}`);
+  const form = document.getElementById(`reply-form-${targetCommentId}`);
+
+  if (authorInput) {
+    authorInput.addEventListener('input', () => {
+      saveCommenterSession(authorInput.value, emailInput ? emailInput.value : '');
+      updateSessionBadge();
+    });
+  }
+  if (emailInput) {
+    emailInput.addEventListener('input', () => {
+      saveCommenterSession(authorInput ? authorInput.value : '', emailInput.value);
+      updateSessionBadge();
+    });
+  }
+
+  if (form) {
+    form.addEventListener('submit', (e) => handleReplySubmit(e, targetCommentId, slug));
+  }
+
+  if (session.name && session.email && contentInput) {
+    contentInput.focus();
+  } else if (authorInput) {
+    authorInput.focus();
+  }
+}
+window.toggleReplyForm = toggleReplyForm;
+
+async function handleReplySubmit(e, parentId, slug) {
+  e.preventDefault();
+
+  const authorInput = document.getElementById(`reply-author-${parentId}`);
+  const emailInput = document.getElementById(`reply-email-${parentId}`);
+  const contentInput = document.getElementById(`reply-content-${parentId}`);
+  const statusEl = document.getElementById(`reply-form-status-${parentId}`);
+
+  if (!authorInput || !emailInput || !contentInput) return;
+
+  const authorName = authorInput.value.trim();
+  const authorEmail = emailInput.value.trim();
+  const content = contentInput.value.trim();
+
+  if (!authorName || !authorEmail || !content) return;
+
+  saveCommenterSession(authorName, authorEmail);
+  updateSessionBadge();
+
+  if (statusEl) {
+    statusEl.innerText = 'Posting reply...';
+    statusEl.style.color = 'var(--text-secondary)';
+  }
+
+  const newReply = {
+    id: 'local_' + Date.now(),
+    article_id: slug,
+    author_name: authorName,
+    author_email: authorEmail,
+    content: content,
+    parent_id: parentId,
+    created_at: new Date().toISOString(),
+  };
+
+  let savedReply = newReply;
+
+  // 1. Try Supabase
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('comments')
+        .insert([
+          {
+            article_id: slug,
+            author_name: authorName,
+            author_email: authorEmail,
+            content: content,
+            parent_id: isNaN(parentId) ? null : parseInt(parentId, 10),
+          },
+        ])
+        .select()
+        .single();
+
+      if (!error && data) {
+        savedReply = data;
+      }
+    } catch (err) {
+      console.warn('Supabase reply insert error:', err.message);
+    }
+  } else if (API_BASE_URL) {
+    // 2. Try API Gateway
+    try {
+      const res = await fetchWithTimeout(
+        `${API_BASE_URL}/api/comments`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            articleId: slug,
+            authorName,
+            authorEmail,
+            content,
+            parentId,
+          }),
+        },
+        3000
+      );
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.id) {
+          savedReply = data;
+        }
+      }
+    } catch (err) {
+      console.warn('Backend unavailable for reply, saved locally:', err.message);
+    }
+  }
+
+  // Save to local storage
+  let localComments = [];
+  try {
+    localComments = JSON.parse(localStorage.getItem(`comments_${slug}`)) || [];
+  } catch (err) {}
+
+  if (!localComments.some((c) => String(c.id) === String(savedReply.id))) {
+    localComments.push(savedReply);
+  }
+  localStorage.setItem(`comments_${slug}`, JSON.stringify(localComments));
+
+  if (statusEl) {
+    statusEl.innerText = 'Reply posted!';
+    statusEl.style.color = '#4cd964';
+  }
+
+  setTimeout(() => {
+    closeReplyForm();
+    loadComments(slug);
+  }, 400);
+}
+window.handleReplySubmit = handleReplySubmit;
+
+function setupCommentSessionForm() {
+  const authorInput = document.getElementById('comment-author');
+  const emailInput = document.getElementById('comment-email');
+  if (!authorInput || !emailInput) return;
+
+  const session = getCommenterSession();
+  if (session.name && !authorInput.value) {
+    authorInput.value = session.name;
+  }
+  if (session.email && !emailInput.value) {
+    emailInput.value = session.email;
+  }
+
+  updateSessionBadge();
+
+  authorInput.addEventListener('input', () => {
+    saveCommenterSession(authorInput.value, emailInput.value);
+    updateSessionBadge();
+  });
+
+  emailInput.addEventListener('input', () => {
+    saveCommenterSession(authorInput.value, emailInput.value);
+    updateSessionBadge();
+  });
+}
+
+function updateSessionBadge() {
+  const indicator = document.getElementById('comment-session-indicator');
+  if (!indicator) return;
+
+  const session = getCommenterSession();
+  if (session.name && session.email) {
+    indicator.innerHTML = `
+      <div class="session-badge">
+        <span>Logged in as <strong>${escapeHtml(session.name)}</strong> (${escapeHtml(session.email)})</span>
+        <button type="button" class="session-switch-btn" onclick="window.clearCommenterSession()">Switch</button>
+      </div>
+    `;
+  } else {
+    indicator.innerHTML = '';
+  }
+}
+
+function clearSessionHandler() {
+  clearCommenterSession();
+  const authorInput = document.getElementById('comment-author');
+  const emailInput = document.getElementById('comment-email');
+  if (authorInput) {
+    authorInput.value = '';
+    authorInput.focus();
+  }
+  if (emailInput) {
+    emailInput.value = '';
+  }
+  updateSessionBadge();
+}
+window.clearCommenterSession = clearSessionHandler;
+
 function renderCommentsList(comments, slug) {
   const container = document.getElementById('comments-list-container');
   if (!container) return;
@@ -517,22 +767,79 @@ function renderCommentsList(comments, slug) {
     return;
   }
 
-  container.innerHTML = comments
-    .map((c) => {
-      const email = c.author_email || c.authorEmail || '';
-      const name = c.author_name || c.authorName || 'Anonymous';
+  const threads = organizeCommentThreads(comments);
+
+  container.innerHTML = threads
+    .map((root) => {
+      const email = root.author_email || root.authorEmail || '';
+      const name = root.author_name || root.authorName || 'Anonymous';
       const avatarUrl = getAvatarUrl(email, name);
-      const commentId = c.id;
+      const commentId = root.id;
+
+      const repliesHtml = root.replies && root.replies.length > 0
+        ? `
+          <div class="comment-replies-thread">
+            ${root.replies
+              .map((reply) => {
+                const rEmail = reply.author_email || reply.authorEmail || '';
+                const rName = reply.author_name || reply.authorName || 'Anonymous';
+                const rAvatar = getAvatarUrl(rEmail, rName);
+                const rId = reply.id;
+                const replyingTo = reply.replyingToName ? `<span class="replying-to-tag">↩️ @${escapeHtml(reply.replyingToName)}</span>` : '';
+
+                return `
+                  <div class="comment-card reply-comment" id="comment-${rId}">
+                    <div class="comment-header">
+                      <div class="comment-author-box">
+                        <img src="${rAvatar}" alt="${escapeHtml(rName)}" class="comment-avatar" onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(rName)}&background=64b5f6&color=121212&bold=true';" />
+                        <span class="comment-author">${escapeHtml(rName)}</span>
+                        ${replyingTo}
+                      </div>
+                      <div class="comment-header-right">
+                        <span class="comment-date">${formatDate(reply.created_at || reply.createdAt)}</span>
+                        <button class="comment-reply-btn" title="Reply to comment" onclick="window.toggleReplyForm('${rId}', '${slug}', '${escapeHtml(rName).replace(/'/g, "\\'")}')" aria-label="Reply to comment">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 17 4 12 9 7"></polyline>
+                            <path d="M20 18v-2a4 4 0 0 0-4-4H4"></path>
+                          </svg>
+                          <span>Reply</span>
+                        </button>
+                        <button class="comment-delete-btn" title="Delete comment" onclick="window.deleteComment('${rId}', '${slug}')" aria-label="Delete comment">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                    <div class="comment-body">${escapeHtml(reply.content)}</div>
+                    <div class="reply-form-slot" id="reply-form-slot-${rId}"></div>
+                  </div>
+                `;
+              })
+              .join('')}
+          </div>
+        `
+        : '';
 
       return `
-        <div class="comment-card" id="comment-${commentId}">
+        <div class="comment-card root-comment" id="comment-${commentId}">
           <div class="comment-header">
             <div class="comment-author-box">
               <img src="${avatarUrl}" alt="${escapeHtml(name)}" class="comment-avatar" onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=64b5f6&color=121212&bold=true';" />
               <span class="comment-author">${escapeHtml(name)}</span>
             </div>
             <div class="comment-header-right">
-              <span class="comment-date">${formatDate(c.created_at || c.createdAt)}</span>
+              <span class="comment-date">${formatDate(root.created_at || root.createdAt)}</span>
+              <button class="comment-reply-btn" title="Reply to comment" onclick="window.toggleReplyForm('${commentId}', '${slug}', '${escapeHtml(name).replace(/'/g, "\\'")}')" aria-label="Reply to comment">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 17 4 12 9 7"></polyline>
+                  <path d="M20 18v-2a4 4 0 0 0-4-4H4"></path>
+                </svg>
+                <span>Reply</span>
+              </button>
               <button class="comment-delete-btn" title="Delete comment" onclick="window.deleteComment('${commentId}', '${slug}')" aria-label="Delete comment">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="3 6 5 6 21 6"></polyline>
@@ -543,7 +850,9 @@ function renderCommentsList(comments, slug) {
               </button>
             </div>
           </div>
-          <div class="comment-body">${escapeHtml(c.content)}</div>
+          <div class="comment-body">${escapeHtml(root.content)}</div>
+          <div class="reply-form-slot" id="reply-form-slot-${commentId}"></div>
+          ${repliesHtml}
         </div>
       `;
     })
@@ -679,11 +988,13 @@ async function deleteComment(commentId, slug) {
     }
   }
 
-  // Remove from local storage cache only if authenticated
+  // Remove from local storage cache only if authenticated (including child replies)
   let localComments = [];
   try {
     localComments = JSON.parse(localStorage.getItem(`comments_${slug}`)) || [];
-    localComments = localComments.filter((c) => String(c.id) !== String(commentId));
+    localComments = localComments.filter(
+      (c) => String(c.id) !== String(commentId) && String(c.parent_id || c.parentId) !== String(commentId)
+    );
     localStorage.setItem(`comments_${slug}`, JSON.stringify(localComments));
   } catch (e) {}
 
@@ -702,11 +1013,6 @@ async function deleteComment(commentId, slug) {
 
 window.deleteComment = deleteComment;
 
-
-
-// getAvatarUrl, getGravatarUrl, md5 imported from ./utils.js
-
-
 async function handleCommentSubmit(e, slug) {
   e.preventDefault();
 
@@ -721,6 +1027,10 @@ async function handleCommentSubmit(e, slug) {
 
   if (!authorName || !authorEmail || !content) return;
 
+  // Persist session long-term in localStorage
+  saveCommenterSession(authorName, authorEmail);
+  updateSessionBadge();
+
   statusEl.innerText = 'Submitting comment...';
   statusEl.style.color = 'var(--text-secondary)';
 
@@ -730,6 +1040,7 @@ async function handleCommentSubmit(e, slug) {
     author_name: authorName,
     author_email: authorEmail,
     content: content,
+    parent_id: null,
     created_at: new Date().toISOString(),
   };
 
@@ -746,6 +1057,7 @@ async function handleCommentSubmit(e, slug) {
             author_name: authorName,
             author_email: authorEmail,
             content: content,
+            parent_id: null,
           },
         ])
         .select()
@@ -803,8 +1115,7 @@ async function handleCommentSubmit(e, slug) {
   statusEl.innerText = 'Comment posted successfully!';
   statusEl.style.color = '#4cd964';
 
-  authorInput.value = '';
-  emailInput.value = '';
+  // Only clear the message textarea so session name & email persist!
   contentInput.value = '';
 
   setTimeout(() => {

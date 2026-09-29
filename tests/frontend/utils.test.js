@@ -9,6 +9,10 @@ import {
   getGravatarUrl,
   getAvatarUrl,
   showToast,
+  organizeCommentThreads,
+  getCommenterSession,
+  saveCommenterSession,
+  clearCommenterSession,
 } from '../../frontend/utils.js';
 
 describe('Frontend Utilities (utils.js)', () => {
@@ -159,6 +163,91 @@ describe('Frontend Utilities (utils.js)', () => {
     it('should do nothing if toast-container is missing', () => {
       document.body.innerHTML = '';
       expect(() => showToast('Missing container')).not.toThrow();
+    });
+  });
+
+  describe('organizeCommentThreads', () => {
+    it('should return empty array for non-array or empty input', () => {
+      expect(organizeCommentThreads(null)).toEqual([]);
+      expect(organizeCommentThreads(undefined)).toEqual([]);
+      expect(organizeCommentThreads([])).toEqual([]);
+    });
+
+    it('should organize root comments and attach replies appropriately', () => {
+      const input = [
+        { id: 1, author_name: 'Alice', content: 'Root 1', created_at: '2026-09-01T10:00:00Z' },
+        { id: 2, author_name: 'Bob', content: 'Reply to Root 1', parent_id: 1, created_at: '2026-09-01T10:05:00Z' },
+        { id: 3, author_name: 'Charlie', content: 'Reply to Bob', parent_id: 2, created_at: '2026-09-01T10:10:00Z' },
+        { id: 4, author_name: 'Dave', content: 'Root 2', created_at: '2026-09-01T11:00:00Z' },
+      ];
+
+      const threads = organizeCommentThreads(input);
+      expect(threads).toHaveLength(2);
+
+      // Root 1 checks
+      expect(threads[0].id).toBe(1);
+      expect(threads[0].replies).toHaveLength(2);
+      expect(threads[0].replies[0].id).toBe(2);
+      expect(threads[0].replies[0].replyingToName).toBe('Alice');
+      expect(threads[0].replies[1].id).toBe(3);
+      expect(threads[0].replies[1].replyingToName).toBe('Bob');
+
+      // Root 2 checks
+      expect(threads[1].id).toBe(4);
+      expect(threads[1].replies).toHaveLength(0);
+    });
+
+    it('should handle orphaned replies gracefully by putting them in roots', () => {
+      const input = [
+        null,
+        { content: 'No id' },
+        { id: 10, author_name: 'Ghost', content: 'Missing parent', parent_id: 9999 },
+      ];
+      const threads = organizeCommentThreads(input);
+      expect(threads).toHaveLength(1);
+      expect(threads[0].id).toBe(10);
+    });
+  });
+
+  describe('Commenter Session Management', () => {
+    it('should save, get, and clear commenter session from storage', () => {
+      const store = {};
+      const mockStorage = {
+        getItem: (k) => store[k] || null,
+        setItem: (k, v) => { store[k] = String(v); },
+        removeItem: (k) => { delete store[k]; },
+      };
+
+      // Initially empty
+      expect(getCommenterSession(mockStorage)).toEqual({ name: '', email: '' });
+
+      // Save
+      saveCommenterSession('Dat Nguyen', 'dat@example.com', mockStorage);
+      expect(getCommenterSession(mockStorage)).toEqual({
+        name: 'Dat Nguyen',
+        email: 'dat@example.com',
+      });
+
+      // Clear
+      clearCommenterSession(mockStorage);
+      expect(getCommenterSession(mockStorage)).toEqual({ name: '', email: '' });
+    });
+
+    it('should handle missing storage, empty strings, or exceptions gracefully', () => {
+      expect(getCommenterSession(null)).toEqual({ name: '', email: '' });
+      expect(() => saveCommenterSession('Test', 'test@test.com', null)).not.toThrow();
+      expect(() => saveCommenterSession('', '   ', null)).not.toThrow();
+      expect(() => clearCommenterSession(null)).not.toThrow();
+
+      const throwingStorage = {
+        getItem: () => { throw new Error('Security Error'); },
+        setItem: () => { throw new Error('Quota Exceeded'); },
+        removeItem: () => { throw new Error('Storage Fault'); },
+      };
+
+      expect(getCommenterSession(throwingStorage)).toEqual({ name: '', email: '' });
+      expect(() => saveCommenterSession('Alice', 'alice@test.com', throwingStorage)).not.toThrow();
+      expect(() => clearCommenterSession(throwingStorage)).not.toThrow();
     });
   });
 });

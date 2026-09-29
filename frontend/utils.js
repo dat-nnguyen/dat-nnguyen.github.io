@@ -263,3 +263,104 @@ export function showToast(message, duration = 3000) {
     setTimeout(() => toast.remove(), 300);
   }, duration);
 }
+
+/**
+ * Organizes a flat list of comments into threaded hierarchy.
+ * Root comments contain an array of nested replies, with replies linked to parents.
+ */
+export function organizeCommentThreads(comments) {
+  if (!Array.isArray(comments) || comments.length === 0) return [];
+
+  const map = new Map();
+  const roots = [];
+  const replies = [];
+
+  // Index comments
+  comments.forEach((c) => {
+    if (!c || c.id === undefined) return;
+    const parentId = c.parent_id !== undefined && c.parent_id !== null ? c.parent_id : (c.parentId || null);
+    const item = {
+      ...c,
+      id: c.id,
+      parentId: parentId ? String(parentId) : null,
+      replies: [],
+    };
+    map.set(String(c.id), item);
+  });
+
+  // Separate roots and replies
+  map.forEach((item) => {
+    if (item.parentId && map.has(item.parentId)) {
+      replies.push(item);
+    } else {
+      roots.push(item);
+    }
+  });
+
+  // Attach replies to the appropriate thread root
+  replies.forEach((reply) => {
+    const parent = map.get(reply.parentId);
+    let current = parent;
+    // Traverse to root ancestor if nested
+    while (current.parentId && map.has(current.parentId)) {
+      current = map.get(current.parentId);
+    }
+    reply.replyingToName = parent.author_name || parent.authorName || 'someone';
+    current.replies.push(reply);
+  });
+
+  // Sort root comments chronologically
+  roots.sort((a, b) => new Date(a.created_at || a.createdAt || 0) - new Date(b.created_at || b.createdAt || 0));
+
+  // Sort replies within each root chronologically
+  roots.forEach((root) => {
+    root.replies.sort((a, b) => new Date(a.created_at || a.createdAt || 0) - new Date(b.created_at || b.createdAt || 0));
+  });
+
+  return roots;
+}
+
+/**
+ * Retrieves the stored commenter profile from localStorage.
+ */
+export function getCommenterSession(storage = null) {
+  try {
+    const s = storage || (typeof window !== 'undefined' ? window.localStorage : null);
+    if (!s) return { name: '', email: '' };
+    return {
+      name: s.getItem('commenter_name') || '',
+      email: s.getItem('commenter_email') || '',
+    };
+  } catch (e) {
+    return { name: '', email: '' };
+  }
+}
+
+/**
+ * Saves commenter profile (name, email) into localStorage for long-term session persistence.
+ */
+export function saveCommenterSession(name, email, storage = null) {
+  try {
+    const s = storage || (typeof window !== 'undefined' ? window.localStorage : null);
+    if (!s) return;
+    if (typeof name === 'string' && name.trim()) {
+      s.setItem('commenter_name', name.trim());
+    }
+    if (typeof email === 'string' && email.trim()) {
+      s.setItem('commenter_email', email.trim());
+    }
+  } catch (e) {}
+}
+
+/**
+ * Clears commenter profile from localStorage.
+ */
+export function clearCommenterSession(storage = null) {
+  try {
+    const s = storage || (typeof window !== 'undefined' ? window.localStorage : null);
+    if (!s) return;
+    s.removeItem('commenter_name');
+    s.removeItem('commenter_email');
+  } catch (e) {}
+}
+

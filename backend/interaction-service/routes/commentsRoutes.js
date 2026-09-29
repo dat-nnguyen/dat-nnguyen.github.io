@@ -97,32 +97,47 @@ module.exports = (pool) => {
     }
   });
 
-  // POST method to create new comment
+  // POST method to create new comment (supports top-level and replies)
   router.post('/', async (req, res) => {
     try {
-      const { articleId, authorName, authorEmail, content } = req.body;
+      const { articleId, authorName, authorEmail, content, parentId, parent_id } = req.body || {};
+      const effectiveParentId = parentId !== undefined ? parentId : (parent_id !== undefined ? parent_id : null);
 
       if (!articleId || !authorName || !authorEmail || !content) {
         return res.status(400).json({ error: 'All fields are required' });
       }
 
+      const parsedParentId = effectiveParentId
+        ? (isNaN(effectiveParentId) ? null : parseInt(effectiveParentId, 10))
+        : null;
+
       // Try PostgreSQL first
       try {
         const insertQuery = `
-          INSERT INTO comments (article_id, author_name, author_email, content)
-          VALUES ($1, $2, $3, $4)
+          INSERT INTO comments (article_id, author_name, author_email, content, parent_id)
+          VALUES ($1, $2, $3, $4, $5)
           RETURNING *; 
         `;
-        const result = await pool.query(insertQuery, [articleId, authorName, authorEmail, content]);
+        const result = await pool.query(insertQuery, [
+          articleId,
+          authorName,
+          authorEmail,
+          content,
+          parsedParentId,
+        ]);
         const row = result.rows[0];
-        return res.status(201).json({
+        const resObj = {
           id: row.id,
           article_id: row.article_id,
           author_name: row.author_name,
           author_email: row.author_email,
           content: row.content,
           created_at: row.created_at,
-        });
+        };
+        if (row.parent_id !== undefined) {
+          resObj.parent_id = row.parent_id;
+        }
+        return res.status(201).json(resObj);
       } catch (dbErr) {
         console.warn('PostgreSQL unavailable, using in-memory:', dbErr.message);
       }
@@ -134,6 +149,7 @@ module.exports = (pool) => {
         author_name: authorName,
         author_email: authorEmail,
         content: content,
+        parent_id: parsedParentId !== null ? parsedParentId : (effectiveParentId ? effectiveParentId : null),
         created_at: new Date().toISOString(),
       };
       inMemoryComments.unshift(newComment);
@@ -202,9 +218,11 @@ module.exports = (pool) => {
         console.warn('PostgreSQL unavailable for delete, checking in-memory:', dbErr.message);
       }
 
-      // In-memory fallback
+      // In-memory fallback: delete the comment and any child replies
       const initialLength = inMemoryComments.length;
-      inMemoryComments = inMemoryComments.filter((c) => String(c.id) !== String(id));
+      inMemoryComments = inMemoryComments.filter(
+        (c) => String(c.id) !== String(id) && String(c.parent_id || c.parentId) !== String(id)
+      );
       if (inMemoryComments.length < initialLength) {
         return res.status(200).json({
           message: 'Comment deleted successfully (in-memory)',

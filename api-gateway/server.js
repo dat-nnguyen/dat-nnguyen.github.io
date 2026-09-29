@@ -27,8 +27,10 @@ if (process.env.DATABASE_URL) {
         author_name VARCHAR(100) NOT NULL,
         author_email VARCHAR(255) NOT NULL,
         content TEXT NOT NULL,
+        parent_id INT REFERENCES comments(id) ON DELETE CASCADE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+      ALTER TABLE comments ADD COLUMN IF NOT EXISTS parent_id INT REFERENCES comments(id) ON DELETE CASCADE;
       CREATE TABLE IF NOT EXISTS likes (
         article_id VARCHAR(255) PRIMARY KEY,
         likes_count INT DEFAULT 0
